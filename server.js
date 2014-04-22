@@ -7,6 +7,16 @@ app.configure(function () {
     app.use(express.bodyParser());
     app.use(express.static(__dirname+'/public'));
 });
-  
+
+app.get( '/addr/:address', function( req, res ) {
+	res.sendfile( __dirname + '/public/address.html' );
+});
+
+app.get( '/', function( req, res ) {
+	res.sendfile( __dirname + '/public/landing.html' );
+});
+
+
+
 app.listen(3000);
 console.log('Listening on port 3000...');

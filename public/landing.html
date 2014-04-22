@@ -9,11 +9,11 @@
     <title>SlimWallet</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="/css/bootstrap.css" rel="stylesheet">
 
     <!-- Add custom CSS here -->
-    <link href="css/sb-admin.css" rel="stylesheet">
-    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+    <link href="/css/sb-admin.css" rel="stylesheet">
+    <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css">
     <!-- Page Specific CSS -->
     <link rel="stylesheet" href="http://cdn.oesmith.co.uk/morris-0.4.3.min.css">
   </head>
@@ -33,7 +33,7 @@
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse navbar-ex1-collapse">
           <ul class="nav navbar-nav side-nav">
-            <li class="active"><a href="index.html"><i class="fa fa-dashboard"></i> Dashboard</a></li>
+            <li class="active"><a href="/index.html"><i class="fa fa-dashboard"></i> Dashboard</a></li>
           </ul>
 
           <ul class="nav navbar-nav navbar-right navbar-user">
@@ -46,12 +46,12 @@
           <div class="row">
           <div class="col-lg-12">
 
-            <form role="form">
+            <form role="form" id="address-search">
               
               <div class="form-group input-group">
                 <input type="text" class="form-control" placeholder="Search for a Bitcoin Address">
                 <span class="input-group-btn">
-                  <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
+                  <button class="btn btn-default" type="submit"><i class="fa fa-search"></i></button>
                 </span>
               </div>
 
@@ -61,148 +61,19 @@
 
         <div class="row">
           <div class="col-lg-12">
-            <h1>Dashboard <small>Statistics Overview</small></h1>
-            <ol class="breadcrumb">
-              <li class="active"><i class="fa fa-dashboard"></i> Dashboard</li>
-            </ol>
+            <h1>SlimWallet <small>Just Show me my Stuff!</small></h1>
+            <p>
+              Tired of jumping from site to site to figure out the state of your cryptoassets?  So are we!
+            </p>
+            <p>
+              The SlimWallet is an entirely new kind of wallet.  Rather than maintaining all of your data itself, the SlimWallet knows <strong>where that data is held by others</strong>, compiles it and shows it to you in a concise, easy-to-understand format.
+            </p>
+            <p>
+              <strong>What are you waiting for?  Enter a bitcoin address above, and see what we mean!</strong>
+            </p>
           </div>
         </div><!-- /.row -->
 
-
-
-        <div class="row">
-          <div class="col-lg-4">
-            <div class="panel panel-primary">
-              <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-long-arrow-right"></i> Traffic Sources: October 1, 2013 - October 31, 2013</h3>
-              </div>
-              <div class="panel-body">
-                <div id="morris-chart-donut"></div>
-                <div class="text-right">
-                  <a href="#">View Details <i class="fa fa-arrow-circle-right"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-8">
-            <h2>Striped Rows 1</h2>
-            <div class="table-responsive">
-              <table class="table table-hover table-striped tablesorter">
-                <thead>
-                  <tr>
-                    <th>Page <i class="fa fa-sort"></i></th>
-                    <th>Visits <i class="fa fa-sort"></i></th>
-                    <th>% New Visits <i class="fa fa-sort"></i></th>
-                    <th>Revenue <i class="fa fa-sort"></i></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>/index.html</td>
-                    <td>1265</td>
-                    <td>32.3%</td>
-                    <td>$321.33</td>
-                  </tr>
-                  <tr>
-                    <td>/about.html</td>
-                    <td>261</td>
-                    <td>33.3%</td>
-                    <td>$234.12</td>
-                  </tr>
-                  <tr>
-                    <td>/sales.html</td>
-                    <td>665</td>
-                    <td>21.3%</td>
-                    <td>$16.34</td>
-                  </tr>
-                  <tr>
-                    <td>/blog.html</td>
-                    <td>9516</td>
-                    <td>89.3%</td>
-                    <td>$1644.43</td>
-                  </tr>
-                  <tr>
-                    <td>/404.html</td>
-                    <td>23</td>
-                    <td>34.3%</td>
-                    <td>$23.52</td>
-                  </tr>
-                  <tr>
-                    <td>/services.html</td>
-                    <td>421</td>
-                    <td>60.3%</td>
-                    <td>$724.32</td>
-                  </tr>
-                  <tr>
-                    <td>/blog/post.html</td>
-                    <td>1233</td>
-                    <td>93.2%</td>
-                    <td>$126.34</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-                        <h2>Striped Rows 2</h2>
-            <div class="table-responsive">
-              <table class="table table-hover table-striped tablesorter">
-                <thead>
-                  <tr>
-                    <th>Page <i class="fa fa-sort"></i></th>
-                    <th>Visits <i class="fa fa-sort"></i></th>
-                    <th>% New Visits <i class="fa fa-sort"></i></th>
-                    <th>Revenue <i class="fa fa-sort"></i></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>/index.html</td>
-                    <td>1265</td>
-                    <td>32.3%</td>
-                    <td>$321.33</td>
-                  </tr>
-                  <tr>
-                    <td>/about.html</td>
-                    <td>261</td>
-                    <td>33.3%</td>
-                    <td>$234.12</td>
-                  </tr>
-                  <tr>
-                    <td>/sales.html</td>
-                    <td>665</td>
-                    <td>21.3%</td>
-                    <td>$16.34</td>
-                  </tr>
-                  <tr>
-                    <td>/blog.html</td>
-                    <td>9516</td>
-                    <td>89.3%</td>
-                    <td>$1644.43</td>
-                  </tr>
-                  <tr>
-                    <td>/404.html</td>
-                    <td>23</td>
-                    <td>34.3%</td>
-                    <td>$23.52</td>
-                  </tr>
-                  <tr>
-                    <td>/services.html</td>
-                    <td>421</td>
-                    <td>60.3%</td>
-                    <td>$724.32</td>
-                  </tr>
-                  <tr>
-                    <td>/blog/post.html</td>
-                    <td>1233</td>
-                    <td>93.2%</td>
-                    <td>$126.34</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-        </div><!-- /.row -->
                 <div class="row">
           <div class="col-lg-3">
             <div class="panel panel-info">
@@ -319,15 +190,11 @@
     </div><!-- /#wrapper -->
 
     <!-- JavaScript -->
-    <script src="js/jquery-1.10.2.js"></script>
-    <script src="js/bootstrap.js"></script>
+    <script src="/js/jquery-1.10.2.js"></script>
+    <script src="/js/bootstrap.js"></script>
 
     <!-- Page Specific Plugins -->
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-    <script src="http://cdn.oesmith.co.uk/morris-0.4.3.min.js"></script>
-    <script src="js/morris/chart-data-morris.js"></script>
-    <script src="js/tablesorter/jquery.tablesorter.js"></script>
-    <script src="js/tablesorter/tables.js"></script>
+    <script src="/js/slimwallet.js"></script>
 
   </body>
 </html>
