@@ -1,0 +1,20 @@
+{
+  "name": "slimwallet",
+  "version": "0.0.1",
+  "description": "Lighweight, consensus-based webwallet",
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/curtislacy/slimwallet.git"
+  },
+  "keywords": [
+    "mastercoin",
+    "bitcoin"
+  ],
+  "author": "",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "dependencies": {
+    "express": "~3.4.8"
+  }
+}
