@@ -146,26 +146,31 @@ function updateValues( currency ) {
 	var balance = slimWalletData.balances.get( currency );
 	if( balance != null )
 	{
-		var valueOfBalance = balance * slimWalletData.values.get( currency );
+		var value = slimWalletData.values.get( currency );
+		if( value != null )
+		{
+			var valueOfBalance = balance * slimWalletData.values.get( currency );
 
-		var outputFields = $( '#balance-tables #' + currency + '-balances td#' + currency + '-value' );
-		if( outputFields.length == 0 )
-		{
-			$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
-				$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
-			$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
-				$( '<td>' )
-					.attr( 'id', currency + '-value')
-					.append( $( '<a>' )
-						.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
-						.text( currencyFormatters[ 'USD' ]( valueOfBalance ))
-					)
-				);
-		}
-		else
-		{
-			$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
-				.text( currencyFormatters[ 'USD' ]( valueOfBalance ));
+			var outputFields = $( '#balance-tables #' + currency + '-balances td#' + currency + '-value' );
+			if( outputFields.length == 0 )
+			{
+				$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
+					$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
+				$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
+					$( '<td>' )
+						.attr( 'id', currency + '-value')
+						.append( $( '<a>' )
+							.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
+							.text( currencyFormatters[ 'USD' ]( valueOfBalance ))
+						)
+					);
+			}
+			else
+			{
+				$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
+					.text( currencyFormatters[ 'USD' ]( valueOfBalance ));
+			}
+			
 		}
 	}
 }
