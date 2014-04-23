@@ -5,14 +5,20 @@ var BalanceData = Backbone.Model.extend( {
 	// Map currency ID to balance.
 	// Map "currencyID-source" to source of the data.
 });
+var ValueData = Backbone.Model.extend( {
+	// Map currencyID to value.
+	// Map "currencyID-source" to source of the data.
+});
 
 var slimWalletData = {
 	"addressData": new AddressData(),
-	"balances": new BalanceData()
+	"balances": new BalanceData(),
+	"values": new ValueData()
 }
 var workers = {};
 
 var currencyFormatters = {
+	USD: function( value ){ return '$' + value.toFixed( 2 ) },
 	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' }
 }
 
@@ -39,6 +45,8 @@ function attachModelSetters( data ) {
 		data.addressData.set( { address: $( '#address-search input' ).val() });
 	});
 
+	workers[ 'balanceQuery' ] = new BalanceQueryWorker( data );
+	workers[ 'valueQuery' ] = new ValueQueryWorker( data );
 };
 
 // Attach listeners to the data model that populate the UI based on its data.
@@ -53,8 +61,6 @@ function attachModelListeners( data ) {
 	} );
 
 	data.balances.on( 'change', function( data ) {
-		console.log( '** Balance Change:' );
-		console.log( data.changed );
 		for( var v in data.changed )
 			if( data.changed.hasOwnProperty( v ))
 			{
@@ -63,7 +69,15 @@ function attachModelListeners( data ) {
 			}
 	} );
 
-	workers[ 'balanceQuery' ] = new BalanceQueryWorker( data );
+	data.values.on( 'change', function( data ) {
+		for( var v in data.changed )
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length - 7 )
+					updateValues( v );
+			}
+	});
+
 };
 
 // Populate the data model as needed.
@@ -97,7 +111,6 @@ var balanceTableTemplate = _.template( "\
     </div>\
 ");
 function updateBalanceTable( currency ) {
-	console.log( 'Update table for: ' + currency + ':' );
 	var existingTables = $( '#balance-tables #' + currency + '-balances' );
 	if( existingTables.length == 0 )
 	{
@@ -125,6 +138,36 @@ function updateBalanceTable( currency ) {
 						slimWalletData.balances.get( currency ) ) +
 					'</a>' );
 	}
+
+	// We'll need to update the values, if they exist.
+	updateValues( currency );
+}
+function updateValues( currency ) {
+	var balance = slimWalletData.balances.get( currency );
+	if( balance != null )
+	{
+		var valueOfBalance = balance * slimWalletData.values.get( currency );
+
+		var outputFields = $( '#balance-tables #' + currency + '-balances td#' + currency + '-value' );
+		if( outputFields.length == 0 )
+		{
+			$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
+				$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
+			$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
+				$( '<td>' )
+					.attr( 'id', currency + '-value')
+					.append( $( '<a>' )
+						.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
+						.text( currencyFormatters[ 'USD' ]( valueOfBalance ))
+					)
+				);
+		}
+		else
+		{
+			$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
+				.text( currencyFormatters[ 'USD' ]( valueOfBalance ));
+		}
+	}
 }
 
 // Actually recovers balances asyncronously.
@@ -137,7 +180,8 @@ function BalanceQueryWorker( data ) {
 	} );
 }
 BalanceQueryWorker.prototype.setAddress = function( newAddress ) {
-	clearTimeout( this.loop );
+	if( this.loop )
+		clearTimeout( this.loop );
 	this.loop = setTimeout( this.getBalances.bind( this ) );
 }
 BalanceQueryWorker.prototype.getBalances = function() {
@@ -154,7 +198,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						'bitcoin-source': 'https://btc.blockr.io/address/info/' + originalAddress 
 					});
 				}
-				self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
+				self.loop = setTimeout( self.getBalances.bind( self ), 5000 );
 			}
 		} 
 	);
@@ -173,4 +217,52 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	});*/
 
 	
+}
+
+// Recovers values of currencies.
+function ValueQueryWorker( data ) {
+	var self = this;
+	this.balances = data.balances;
+	this.values = data.values;
+	this.loops = {};
+	this.balances.on( 'change', function( data ) {
+		for( var v in data.changed )
+		{
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length - 7 )
+					if( !self.loops[ v ])
+						self.addCurrency( v );
+			}
+		}
+	});
+}
+ValueQueryWorker.prototype.addCurrency = function( currency ) {
+	this.loops[ currency ] = setTimeout( this.getValues.bind( {
+		self: this,
+		currency: currency
+	} ));
+}
+ValueQueryWorker.prototype.getValues = function() {
+	var outerThis = this;
+	var self = this.self;
+	var currency = this.currency;
+	if( this.currency == 'bitcoin' )
+	{
+
+		// This call actually tends to time out - an ideal situation for having multiple sources!
+		$.getJSON( 'http://btc.blockr.io/api/v1/exchangerate/current',
+			function( response ) {
+				if( response.code == 200 )
+				{
+					var usdToBtc = parseFloat( response.data[0].rates.BTC );
+					self.values.set( {
+						'bitcoin': 1.0 / usdToBtc,
+						'bitcoin-source': 'http://btc.blockr.io',
+					});
+				}
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			}
+		);
+	}
 }
