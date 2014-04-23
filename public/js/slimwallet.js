@@ -53,8 +53,6 @@ function attachModelListeners( data ) {
 	} );
 
 	data.balances.on( 'change', function( data ) {
-		console.log( '** Balance Change:' );
-		console.log( data.changed );
 		for( var v in data.changed )
 			if( data.changed.hasOwnProperty( v ))
 			{
@@ -76,7 +74,7 @@ function initModelData( data ) {
 };
 
 var balanceTableTemplate = _.template( "\
-	<div class=\"col-lg-8\" id=\"<%= currency %>-balances\">\
+	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
             <h2><%= currency %></h2>\
             <div class=\"table-responsive\">\
               <table class=\"table table-hover table-striped tablesorter\">\
