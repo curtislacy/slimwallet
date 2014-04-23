@@ -3,6 +3,7 @@ var AddressData = Backbone.Model.extend( {
 });
 var BalanceData = Backbone.Model.extend( {
 	// Map currency ID to balance.
+	// Map "currencyID-source" to source of the data.
 });
 
 var slimWalletData = {
@@ -74,18 +75,32 @@ BalanceQueryWorker.prototype.setAddress = function( newAddress ) {
 }
 BalanceQueryWorker.prototype.getBalances = function() {
 	var self = this;
-	var originalAddress = this.addressModel.get( 'address' );	$.getJSON( 'http://btc.blockr.io/api/v1/address/info/' + originalAddress, 
+	var originalAddress = this.addressModel.get( 'address' );
+	$.getJSON( 'https://btc.blockr.io/api/v1/address/info/' + originalAddress, 
 		function( response ) {
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
 				if( response.code == 200 )
 				{
 					self.balances.set( { 'bitcoin': response.data.balance } );
-					console.log( 'Balance is: ' + self.balances.get( 'bitcoin' ) + ' BTC' );
+					self.balances.set( { 'bitcoin-source': 'http://btc.blockr.io/' });
+					console.log( self.balances.attributes );
 				}
 			}
 		} 
 	);
+	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
+/*	$.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
+		function( response ) {
+			if( originalAddress == self.addressModel.get( 'address '))
+			{
+				if( response.code == 200 )
+				{
+					console.log( 'Blockchain.info response' );
+					console.log( response.data );
+				}
+			}
+	});*/
 
 	this.loop = setTimeout( this.getBalances.bind( this ), 30000 );
 }
