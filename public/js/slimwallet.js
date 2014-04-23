@@ -48,6 +48,17 @@ function attachModelListeners( data ) {
 		window.document.title = 'SlimWallet - ' + data.changed.address;
 	} );
 
+	data.balances.on( 'change', function( data ) {
+		console.log( '** Balance Change:' );
+		console.log( data.changed );
+		for( var v in data.changed )
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length - 7 )
+					updateBalanceTable( v );
+			}
+	} );
+
 	workers[ 'balanceQuery' ] = new BalanceQueryWorker( data );
 };
 
@@ -59,6 +70,56 @@ function initModelData( data ) {
 		data.addressData.set( { address: addressMatch[1] } );
 
 };
+
+var balanceTableTemplate = _.template( "\
+	<div class=\"col-lg-8\" id=\"<%= currency %>-balances\">\
+            <h2><%= currency %></h2>\
+            <div class=\"table-responsive\">\
+              <table class=\"table table-hover table-striped tablesorter\">\
+                <thead>\
+                  <tr>\
+                    <th>Address <i class=\"fa fa-sort\"></i></th>\
+                    <th>Balance <i class=\"fa fa-sort\"></i></th>\
+                  </tr>\
+                </thead>\
+                <tbody>\
+                  <tr>\
+                    <td><%= address %></td>\
+                    <td id=\"<%= currency %>-balance\"><%= balance %></td>\
+                  </tr>\
+                </tbody>\
+              </table>\
+            </div>\
+    </div>\
+");
+function updateBalanceTable( currency ) {
+	console.log( 'Update table for: ' + currency + ':' );
+	var existingTables = $( '#balance-tables #' + currency + '-balances' );
+	if( existingTables.length == 0 )
+	{
+		// Make a new table.
+		$( '#balance-tables' ).append( $( balanceTableTemplate( 
+			{ 
+				"currency": currency,
+				"address": slimWalletData.addressData.get( 'address' ),
+				"balance": '<a href="' + 
+					slimWalletData.balances.get( currency + '-source' ) + 
+					'">' +
+					slimWalletData.balances.get( currency ) +
+					'</a>'
+			}
+		)));
+	}
+	else
+	{
+		$( '#balance-tables #' + currency + '-balances td#' + currency + '-balance' )
+			.html( '<a href="' + 
+					slimWalletData.balances.get( currency + '-source' ) + 
+					'">' +
+					slimWalletData.balances.get( currency ) +
+					'</a>' );
+	}
+}
 
 // Actually recovers balances asyncronously.
 function BalanceQueryWorker( data ) {
@@ -82,14 +143,17 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			{
 				if( response.code == 200 )
 				{
-					self.balances.set( { 'bitcoin': response.data.balance } );
-					self.balances.set( { 'bitcoin-source': 'http://btc.blockr.io/' });
-					console.log( self.balances.attributes );
+					self.balances.set( { 
+						'bitcoin': response.data.balance,
+						'bitcoin-source': 'https://btc.blockr.io/address/info/' + originalAddress 
+					});
 				}
+				self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 			}
 		} 
 	);
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
+	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 /*	$.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
 		function( response ) {
 			if( originalAddress == self.addressModel.get( 'address '))
@@ -102,5 +166,5 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			}
 	});*/
 
-	this.loop = setTimeout( this.getBalances.bind( this ), 30000 );
+	
 }
