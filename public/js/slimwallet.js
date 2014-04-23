@@ -12,6 +12,10 @@ var slimWalletData = {
 }
 var workers = {};
 
+var currencyFormatters = {
+	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' }
+}
+
 $( function() {
 
 	attachModelSetters( slimWalletData );
@@ -105,7 +109,8 @@ function updateBalanceTable( currency ) {
 				"balance": '<a href="' + 
 					slimWalletData.balances.get( currency + '-source' ) + 
 					'">' +
-					slimWalletData.balances.get( currency ) +
+					currencyFormatters[ currency ]( 
+						slimWalletData.balances.get( currency ) ) +
 					'</a>'
 			}
 		)));
@@ -116,7 +121,8 @@ function updateBalanceTable( currency ) {
 			.html( '<a href="' + 
 					slimWalletData.balances.get( currency + '-source' ) + 
 					'">' +
-					slimWalletData.balances.get( currency ) +
+					currencyFormatters[ currency ]( 
+						slimWalletData.balances.get( currency ) ) +
 					'</a>' );
 	}
 }
