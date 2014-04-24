@@ -476,14 +476,20 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	var self = this.self;
 	var currency = this.currency;
 
-	var match = currency.match( /SP([0-9]+)/ )
-	if( match )
+	if( currency == 'bitcoin' )
 	{
-		console.log( 'Get currency Number ' + match[1] );
-		$.getJSON( 'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
+		$.getJSON( 'http://btc.blockr.io/api/v1/coin/info',
 			function( response ) {
-				console.log( response );
-				if( response[0] )
+				if( response.code == 200 )
+				{
+					self.coinData.set( {
+						"bitcoin": {
+							"name": response.data.coin.name
+						}
+					});
+					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
+				}
+/*				if( response[0] )
 				{
 					var extractedData = {};
 					extractedData[ currency + '-source' ] = 'https://test.omniwallet.org/';
@@ -493,9 +499,33 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 						"divisible": parseInt( response[0].property_type ) == 2
 					}
 					self.coinData.set( extractedData );
-				}
+				}*/
 				self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 			}
 		);
 	}
+	else
+	{
+		var match = currency.match( /SP([0-9]+)/ )
+		if( match )
+		{
+			$.getJSON( 'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
+				function( response ) {
+					if( response[0] )
+					{
+						var extractedData = {};
+						extractedData[ currency + '-source' ] = 'https://test.omniwallet.org/';
+						extractedData[ currency ] = {
+							"name": response[0].propertyName + ' (' + match[1] + ')',
+							"description": response[0].propertyData,
+							"divisible": parseInt( response[0].property_type ) == 2
+						}
+						self.coinData.set( extractedData );
+					}
+					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
+				}
+			);
+		}		
+	}
+
 }
