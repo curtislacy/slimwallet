@@ -9,11 +9,21 @@ var ValueData = Backbone.Model.extend( {
 	// Map currencyID to value.
 	// Map "currencyID-source" to source of the data.
 });
-
+var CoinData = Backbone.Model.extend( {
+	/* Map currencyID to coin description data:
+	{
+		"name": "Mastercoin",
+		"description": "SAFE Network Crowdsale (MSAFE)",
+		"divisible": true
+	}
+	
+	Map "currencyID-source" to source of the data. */
+});
 var slimWalletData = {
 	"addressData": new AddressData(),
 	"balances": new BalanceData(),
-	"values": new ValueData()
+	"values": new ValueData(),
+	"coinData": new CoinData()
 }
 var workers = {};
 
@@ -67,6 +77,7 @@ function attachModelSetters( data ) {
 
 	workers[ 'balanceQuery' ] = new BalanceQueryWorker( data );
 	workers[ 'valueQuery' ] = new ValueQueryWorker( data );
+	workers[ 'coinDataQuery' ] = new CoinDataQueryWorker( data );
 };
 
 // Attach listeners to the data model that populate the UI based on its data.
@@ -406,6 +417,60 @@ ValueQueryWorker.prototype.getValues = function() {
 					});
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			}
+		);
+	}
+}
+
+
+// Recovers coinDatas of currencies.
+function CoinDataQueryWorker( data ) {
+	var self = this;
+	this.balances = data.balances;
+	this.coinData = data.coinData;
+	this.loops = {};
+	this.balances.on( 'change', function( data ) {
+		for( var v in data.changed )
+		{
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length - 7 )
+					if( !self.loops[ v ])
+						self.addCurrency( v );
+			}
+		}
+	});
+}
+CoinDataQueryWorker.prototype.addCurrency = function( currency ) {
+	this.loops[ currency ] = setTimeout( this.getCoinData.bind( {
+		self: this,
+		currency: currency
+	} ));
+}
+CoinDataQueryWorker.prototype.getCoinData = function() {
+	var outerThis = this;
+	var self = this.self;
+	var currency = this.currency;
+
+	var match = currency.match( /SP([0-9]+)/ )
+	if( match )
+	{
+		console.log( 'Get currency Number ' + match[1] );
+		$.getJSON( 'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
+			function( response ) {
+				console.log( response );
+				if( response[0] )
+				{
+					var extractedData = {};
+					extractedData[ currency + '-source' ] = 'https://test.omniwallet.org/';
+					extractedData[ currency ] = {
+						"name": response[0].propertyName + ' (' + match[1] + ')',
+						"description": response[0].propertyData,
+						"divisible": parseInt( response[0].property_type ) == 2
+					}
+					self.coinData.set( extractedData );
+				}
+				self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 			}
 		);
 	}
