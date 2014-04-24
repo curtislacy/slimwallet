@@ -32,15 +32,29 @@ var formatters = {
 	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' },
 	MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
 	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
-	SP: function( value ) {
-		return ( value * 100000000 ) + ' - (Need to check divisibility)';
+	SPdivisible: function( value ) {
+		return value.toFixed( 8 );
+	},
+	SPindivisible: function( value ) {
+		return value.toFixed( 0 );
 	}
 }
 function formatCurrency( currency, value ) {
 	if( formatters[ currency ])
 		return formatters[ currency ]( value );
 	else if( currency.match( /SP[0-9]+/ ))
-		return formatters.SP( value );
+	{
+		var propertyData = slimWalletData.coinData.get( currency );
+
+		if( propertyData && propertyData.divisible )
+		{
+			return formatters.SPdivisible( value );
+		}
+		else
+		{
+			return formatters.SPindivisible( value );
+		}
+	}
 }
 
 var addressQR = null;
@@ -119,7 +133,10 @@ function attachModelListeners( data ) {
 			if( data.changed.hasOwnProperty( v ))
 			{
 				if( v.indexOf( '-source' ) != v.length -7 )
+				{
 					updateCoinData( v );
+					updateBalanceTable( v );
+				}
 			}
 	});
 
@@ -327,9 +344,14 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						if( item.symbol == 'BTC' )
 						{
 						}
+						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
+						{
+							structure[ item.symbol ] = item.value / 100000000;
+							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
+						}
 						else
 						{
-							structure[ item.symbol ] = item.value / 100000000.0;
+							structure[ item.symbol ] = item.value;
 							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
 						}
 					}
@@ -346,41 +368,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
 		});
 
-	queriesMade++;
-	$.post( 'https://omniwallet.labs.engine.co/v1/address/addr/',
-		{ addr: originalAddress },
-		function( response ) {
-			queriesComplete++;
-			if( originalAddress == self.addressModel.get( 'address' ))
-			{
-				if( response.balance )
-				{
-					var structure = {};
-					for( var v in response.balance )
-					{
-						var item = response.balance[v];
-						// Ignore bitcoin for now, since we don't have consensus stuff built yet.
-						if( item.symbol == 'BTC' )
-						{
-						}
-						else
-						{
-							structure[ item.symbol ] = item.value / 100000000.0;
-							structure[ item.symbol + '-source' ] = 'https://omniwallet.labs.engine.co/'
-						}
-					}
-					self.balances.set( structure );
-				}
-				
-				if( queriesComplete == queriesMade )
-					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
-
-			}
-		} ).fail( function() {
-			queriesComplete++;
-				if( queriesComplete == queriesMade )
-					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
-		});
+	
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
 	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 /*	$.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
