@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Lighweight, consensus-based webwallet",
   "main": "server.js",
+  "engines": {
+    "node": "0.10.x"
+  },
   "repository": {
     "type": "git",
     "url": "git://github.com/curtislacy/slimwallet.git"
