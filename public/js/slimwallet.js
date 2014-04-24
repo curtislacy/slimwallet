@@ -436,7 +436,6 @@ ValueQueryWorker.prototype.getValues = function() {
 	{
 		$.getJSON( 'https://masterxchange.com/api/trades.php',
 			function( response ) {
-				console.log( response );
 				var totalCoins = 0;
 				var totalValue = 0;
 				for( var i = 0; i<response.length; i++ )
@@ -464,7 +463,6 @@ ValueQueryWorker.prototype.getValues = function() {
 	{
 		$.getJSON( 'https://masterxchange.com/api/trades.php',
 			function( response ) {
-				console.log( response );
 				var totalCoins = 0;
 				var totalValue = 0;
 				for( var i = 0; i<response.length; i++ )
