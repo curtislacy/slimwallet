@@ -114,6 +114,15 @@ function attachModelListeners( data ) {
 			}
 	});
 
+	data.coinData.on( 'change', function( data ) {
+		for( var v in data.changed )
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length -7 )
+					updateCoinData( v );
+			}
+	});
+
 };
 
 // Populate the data model as needed.
@@ -127,7 +136,7 @@ function initModelData( data ) {
 
 var balanceTableTemplate = _.template( "\
 	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
-            <h2><%= currency %></h2>\
+            <h2 id=\"<%= currency %>-name\"><%= currencyName %></h2>\
             <div class=\"table-responsive\">\
               <table class=\"table table-hover table-striped tablesorter\">\
                 <thead>\
@@ -151,8 +160,14 @@ function updateBalanceTable( currency ) {
 	if( existingTables.length == 0 )
 	{
 		// Make a new table.
+		var coinData = slimWalletData.coinData.get( currency );
+		var currencyName = currency;
+		if( coinData && coinData.name )
+			currencyName = coinData.name;
+
 		$( '#balance-tables' ).append( $( balanceTableTemplate( 
 			{ 
+				"currencyName": currencyName,
 				"currency": currency,
 				"address": slimWalletData.addressData.get( 'address' ),
 				"balance": '<a href="' + 
@@ -206,6 +221,15 @@ function updateValues( currency ) {
 			}
 
 		}
+	}
+}
+
+function updateCoinData( currency ) {
+	var data = slimWalletData.coinData.get( currency );
+	if( data != null )
+	{
+		$( '#balance-tables #' + currency + '-balances #' + currency + '-name' )
+			.text( data.name );
 	}
 }
 
