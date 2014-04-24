@@ -432,6 +432,40 @@ ValueQueryWorker.prototype.getValues = function() {
 			}
 		);
 	}
+	else if( this.currency == 'MSC' )
+	{
+		$.getJSON( 'https://masterxchange.com/api/trades.php',
+			function( response ) {
+				console.log( response );
+				var totalCoins = 0;
+				var totalValue = 0;
+				for( var i = 0; i<response.length; i++ )
+				{
+					if( response[i].market == 'btc/msc' )
+					{
+						totalCoins += parseFloat( response[i].amount );
+						totalValue += parseFloat( response[i].amount * response[i].price );
+					}
+				}
+				var averageValue = totalValue / totalCoins;
+				if( self.values.get( 'bitcoin' ))
+				{
+					var mscToUsd = averageValue * self.values.get( 'bitcoin' );
+					self.values.set( {
+						'MSC': mscToUsd,
+						'MSC-source': 'https://masterxchange.com/'
+					});
+				}
+/*					var usdToBtc = parseFloat( response.data[0].rates.BTC );
+					self.values.set( {
+						'bitcoin': 1.0 / usdToBtc,
+						'bitcoin-source': 'http://btc.blockr.io',
+					});*/
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			}
+		);
+
+	}
 }
 
 
