@@ -298,7 +298,11 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
 			}
-		} );
+		} ).fail( function() {
+			queriesComplete++;
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+		});
 
 	queriesMade++;
 	$.post( 'https://omniwallet.labs.engine.co/v1/address/addr/',
@@ -330,7 +334,11 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
 			}
-		} );
+		} ).fail( function() {
+			queriesComplete++;
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+		});
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
 	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
 /*	$.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
