@@ -25,10 +25,13 @@ var currencyFormatters = {
 var addressQR = null;
 
 $( function() {
-	addressQR = new QRCode( document.getElementById( "address-qr" ), {
-		width: 128,
-		height: 128
-	});
+	if( document.getElementById( "address-qr" ))
+	{
+		addressQR = new QRCode( document.getElementById( "address-qr" ), {
+			width: 128,
+			height: 128
+		});		
+	}
 
 	attachModelSetters( slimWalletData );
 	attachModelListeners( slimWalletData );
@@ -64,8 +67,11 @@ function attachModelListeners( data ) {
 		$( '#address-search input' ).attr( 'placeholder', data.changed.address );
 		$( '#address-display' ).text( data.changed.address );
 		window.document.title = 'SlimWallet - ' + data.changed.address;
-		addressQR.clear();
-		addressQR.makeCode( data.changed.address );
+		if( addressQR )
+		{
+			addressQR.clear();
+			addressQR.makeCode( data.changed.address );			
+		}
 	} );
 
 	data.balances.on( 'change', function( data ) {
