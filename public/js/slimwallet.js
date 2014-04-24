@@ -22,7 +22,13 @@ var currencyFormatters = {
 	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' }
 }
 
+var addressQR = null;
+
 $( function() {
+	addressQR = new QRCode( document.getElementById( "address-qr" ), {
+		width: 128,
+		height: 128
+	});
 
 	attachModelSetters( slimWalletData );
 	attachModelListeners( slimWalletData );
@@ -58,6 +64,8 @@ function attachModelListeners( data ) {
 		$( '#address-search input' ).attr( 'placeholder', data.changed.address );
 		$( '#address-display' ).text( data.changed.address );
 		window.document.title = 'SlimWallet - ' + data.changed.address;
+		addressQR.clear();
+		addressQR.makeCode( data.changed.address );
 	} );
 
 	data.balances.on( 'change', function( data ) {
@@ -170,7 +178,7 @@ function updateValues( currency ) {
 				$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
 					.text( currencyFormatters[ 'USD' ]( valueOfBalance ));
 			}
-			
+
 		}
 	}
 }
