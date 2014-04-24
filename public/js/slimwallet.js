@@ -17,11 +17,20 @@ var slimWalletData = {
 }
 var workers = {};
 
-var currencyFormatters = {
+var formatters = {
 	USD: function( value ){ return '$' + value.toFixed( 2 ) },
 	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' },
 	MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
-	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' }
+	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
+	SP: function( value ) {
+		return ( value * 100000000 ) + ' - (Need to check divisibility)';
+	}
+}
+function formatCurrency( currency, value ) {
+	if( formatters[ currency ])
+		return formatters[ currency ]( value );
+	else if( currency.match( /SP[0-9]+/ ))
+		return formatters.SP( value );
 }
 
 var addressQR = null;
@@ -138,8 +147,7 @@ function updateBalanceTable( currency ) {
 				"balance": '<a href="' + 
 					slimWalletData.balances.get( currency + '-source' ) + 
 					'">' +
-					currencyFormatters[ currency ]( 
-						slimWalletData.balances.get( currency ) ) +
+					formatCurrency( currency, slimWalletData.balances.get( currency ) ) +
 					'</a>'
 			}
 		)));
@@ -150,8 +158,7 @@ function updateBalanceTable( currency ) {
 			.html( '<a href="' + 
 					slimWalletData.balances.get( currency + '-source' ) + 
 					'">' +
-					currencyFormatters[ currency ]( 
-						slimWalletData.balances.get( currency ) ) +
+					formatCurrency( currency, slimWalletData.balances.get( currency ) ) +
 					'</a>' );
 	}
 
@@ -177,14 +184,14 @@ function updateValues( currency ) {
 						.attr( 'id', currency + '-value')
 						.append( $( '<a>' )
 							.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
-							.text( currencyFormatters[ 'USD' ]( valueOfBalance ))
+							.text( formatCurrency( 'USD', valueOfBalance ))
 						)
 					);
 			}
 			else
 			{
 				$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
-					.text( currencyFormatters[ 'USD' ]( valueOfBalance ));
+					.text( formatCurrency( 'USD', valueOfBalance ));
 			}
 
 		}
