@@ -516,7 +516,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 						var extractedData = {};
 						extractedData[ currency + '-source' ] = 'https://test.omniwallet.org/';
 						extractedData[ currency ] = {
-							"name": response[0].propertyName + ' (' + match[1] + ')',
+							"name": response[0].propertyName + ' (#' + match[1] + ')',
 							"description": response[0].propertyData,
 							"divisible": parseInt( response[0].property_type ) == 2
 						}
