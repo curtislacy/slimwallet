@@ -185,6 +185,27 @@
           </div>
         </div><!-- /.row -->
 
+          <div class="col-sm-12">
+            <div class="panel panel-danger">
+              <div class="panel-heading">
+                <div class="row">
+                  <div class="col-xs-12 text-center">
+                    <table width="100%">
+                      <tr>
+                        <td>
+                          <div id="tip-qr"></div>
+                        </td>
+                        <td>
+                          <p class="announcement-text">Like this?  Help me keep it going! <strong>1Lhx85xtTjDTXHgXPVCBnBeJotG4kU5eK3</strong></p>
+                        </td>
+                      </tr>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
       </div><!-- /#page-wrapper -->
 
     </div><!-- /#wrapper -->
@@ -194,6 +215,14 @@
     <script src="/js/bootstrap.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+    <script src="/js/qrcode.min.js"></script>
+    <script type="text/javascript">
+      new QRCode( document.getElementById( "tip-qr" ), {
+        text: "1Lhx85xtTjDTXHgXPVCBnBeJotG4kU5eK3",
+        width: 64,
+        height: 64
+    });
+    </script>
 
     <!-- Page Specific Plugins -->
     <script src="/js/slimwallet.js"></script>
