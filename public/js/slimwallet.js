@@ -43,8 +43,11 @@ Requestor.prototype.getJSON = function( id, url, success, failure ) {
 	status[ id ] = 'In Progress';
 	this.data.set( status );
 
-	$.getJSON( url )
-		.done( function( response ) {
+	$.ajax( {
+		"url": url,
+		"dataType": 'json',
+		timeout: 15000
+	}).done( function( response ) {
 			status[ id ] = 'OK';
 			self.data.set( status );
 			success( response );
@@ -463,6 +466,51 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.balances.set( structure );
 				}
 				
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
+
+			}
+		},
+		function() {
+			queriesComplete++;
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+		});
+
+	queriesMade++;
+	requestor.getJSON( 
+		'mymastercoins.com:balance',
+		'http://mymastercoins.com/jaddressbalance.aspx?Address=' + originalAddress,
+		function( response ) {
+			queriesComplete++;
+			if( originalAddress == self.addressModel.get( 'address' ))
+			{
+				console.log( 'MyMastercoins Balance Response:' );
+				console.log( response );
+/*				if( response.balance )
+				{
+					var structure = {};
+					for( var v in response.balance )
+					{
+						var item = response.balance[v];
+						// Ignore bitcoin for now, since we don't have consensus stuff built yet.
+						if( item.symbol == 'BTC' )
+						{
+						}
+						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
+						{
+							structure[ item.symbol ] = item.value / 100000000;
+							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
+						}
+						else
+						{
+							structure[ item.symbol ] = item.value;
+							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
+						}
+					}
+					self.balances.set( structure );
+				}
+				*/
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
