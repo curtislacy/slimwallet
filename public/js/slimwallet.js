@@ -233,7 +233,7 @@ function updateNetworkStatus( uiKey, status, id, value ) {
 	}
 	else
 	{
-		var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' );
+		var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' ).replaceAll( ' ', '\\ ' );
 		// Remove the display.
 		$( '#' + uiKey + '-queries #' + escapedId ).remove();
 	}
@@ -375,7 +375,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'blockr.io:balance',
+		'blockr:balance',
 		'https://btc.blockr.io/api/v1/address/info/' + originalAddress,
 		function( response ) {
 			queriesComplete++;
@@ -403,7 +403,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'masterchain.info:balance',
+		'Masterchain:balance',
 		'https://masterchain.info/addr/' + originalAddress + '.json',
 		function( response ) {
 			queriesComplete++;
@@ -435,7 +435,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.post( 
-		'test.omniwallet.org:balance',
+		'Omni Test:balance',
 		'https://test.omniwallet.org/v1/address/addr/',
 		{ addr: originalAddress },
 		function( response ) {
@@ -479,7 +479,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'mymastercoins.com:balance',
+		'MyMastercoins:balance',
 		'http://mymastercoins.com/jaddressbalance.aspx?Address=' + originalAddress,
 		function( response ) {
 			queriesComplete++;
@@ -573,7 +573,7 @@ ValueQueryWorker.prototype.getValues = function() {
 
 		// This call actually tends to time out - an ideal situation for having multiple sources!
 		requestor.getJSON( 
-			'btc.blockr.io:value',
+			'blockr:value',
 			'http://btc.blockr.io/api/v1/exchangerate/current',
 			function( response ) {
 				if( response.code == 200 )
@@ -591,7 +591,7 @@ ValueQueryWorker.prototype.getValues = function() {
 			}
 		);
 		requestor.getJSON( 
-			'bitcoinaverage.com:value',
+			'BitcoinAverage:value',
 			'https://api.bitcoinaverage.com/exchanges/USD',
 			function( response ) {
 					console.log( 'BitcoinAverage response: ' );
@@ -612,7 +612,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	else if( this.currency == 'MSC' )
 	{
 		requestor.getJSON( 
-			'masterxchange.com:value',
+			'MasterXchange:value',
 			'https://masterxchange.com/api/trades.php',
 			function( response ) {
 				var totalCoins = 0;
@@ -644,7 +644,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	else if( this.currency == 'SP3' )
 	{
 		requestor.getJSON( 
-			'masterxchange.com:value',
+			'MasterXchange:value',
 			'https://masterxchange.com/api/trades.php',
 			function( response ) {
 				var totalCoins = 0;
@@ -715,7 +715,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	if( currency == 'bitcoin' )
 	{
 		requestor.getJSON( 
-			'btc.blockr.io:' + currency + '-info',
+			'blockr:' + currency + '-info',
 			'http://btc.blockr.io/api/v1/coin/info',
 			function( response ) {
 				if( response.code == 200 )
@@ -751,7 +751,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 		if( match )
 		{
 			requestor.getJSON( 
-				'test.omniwallet.org:' + currency + '-info',
+				'Omni Test:' + currency + '-info',
 				'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
 				function( response ) {
 					if( response[0] )
