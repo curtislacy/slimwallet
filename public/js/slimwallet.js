@@ -725,7 +725,6 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 							"name": response.data.coin.name
 						}
 					});
-					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 				}
 /*				if( response[0] )
 				{
