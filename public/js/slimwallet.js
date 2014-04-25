@@ -188,11 +188,53 @@ function attachModelListeners( data ) {
 	});
 
 	data.networkStatus.on( 'change', function( data ) {
-		console.log( '** Network status change!' );
-		console.log( data.changed );
+		for( var v in data.changed )
+		{
+			if( data.changed.hasOwnProperty( v ))
+				updateNetworkStatus( 'inprogress', 'In Progress', v, data.changed[v] );
+				updateNetworkStatus( 'successful', 'OK', v, data.changed[v] );
+				updateNetworkStatus( 'failed', 'FAILED', v, data.changed[v] );
+		}
 	});
 
 };
+
+String.prototype.replaceAll = function(search, replace)
+{
+    //if replace is null, return original string otherwise it will
+    //replace search string with 'undefined'.
+    if(!replace) 
+        return this;
+
+    return this.replace(new RegExp('[' + search + ']', 'g'), replace);
+};
+
+function updateNetworkStatus( uiKey, status, id, value ) {
+	if( status == value )
+	{
+		// Add the display.
+		$( '#' + uiKey + '-queries' ).append(
+			$( '<div></div>' )
+				.attr( 'class', 'row' )
+				.attr( 'id', id )
+				.append(
+					$( '<div></div>' )
+						.attr( 'class', 'col-xs-12' )
+						.append(
+							$( '<p></p>' )
+								.attr( 'class', 'announcement-text' )
+								.text( id )
+						)
+				)
+		);
+	}
+	else
+	{
+		var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' );
+		// Remove the display.
+		$( '#' + uiKey + '-queries #' + escapedId ).remove();
+	}
+}
 
 // Populate the data model as needed.
 function initModelData( data ) {
@@ -397,7 +439,6 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
-				console.log( response );
 				if( response.balance )
 				{
 					var structure = {};
