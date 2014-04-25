@@ -176,24 +176,29 @@ function updateBalanceTable( currency ) {
 	var existingTables = $( '#balance-tables #' + currency + '-balances' );
 	if( existingTables.length == 0 )
 	{
-		// Make a new table.
-		var coinData = slimWalletData.coinData.get( currency );
-		var currencyName = currency;
-		if( coinData && coinData.name )
-			currencyName = coinData.name;
+		var balance = slimWalletData.balances.get( currency );
+		if( balance > 0 )
+		{
+			// Make a new table.
+			var coinData = slimWalletData.coinData.get( currency );
+			var currencyName = currency;
+			if( coinData && coinData.name )
+				currencyName = coinData.name;
 
-		$( '#balance-tables' ).append( $( balanceTableTemplate( 
-			{ 
-				"currencyName": currencyName,
-				"currency": currency,
-				"address": slimWalletData.addressData.get( 'address' ),
-				"balance": '<a href="' + 
-					slimWalletData.balances.get( currency + '-source' ) + 
-					'">' +
-					formatCurrency( currency, slimWalletData.balances.get( currency ) ) +
-					'</a>'
-			}
-		)));
+			$( '#balance-tables' ).append( $( balanceTableTemplate( 
+				{ 
+					"currencyName": currencyName,
+					"currency": currency,
+					"address": slimWalletData.addressData.get( 'address' ),
+					"balance": '<a href="' + 
+						slimWalletData.balances.get( currency + '-source' ) + 
+						'">' +
+						formatCurrency( currency, balance ) +
+						'</a>'
+				}
+			)));
+
+		}
 	}
 	else
 	{
