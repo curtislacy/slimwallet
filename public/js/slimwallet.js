@@ -431,6 +431,19 @@ ValueQueryWorker.prototype.getValues = function() {
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
+		$.getJSON( 'https://api.bitcoinaverage.com/exchanges/USD',
+			function( response ) {
+					console.log( 'BitcoinAverage response: ' );
+					console.log( response );
+//					if( response )
+/*					var usdToBtc = parseFloat( response.data[0].rates.BTC );
+					self.values.set( {
+						'bitcoin': 1.0 / usdToBtc,
+						'bitcoin-source': 'http://btc.blockr.io',
+					});*/
+				//self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			}
+		);
 	}
 	else if( this.currency == 'MSC' )
 	{
@@ -473,14 +486,21 @@ ValueQueryWorker.prototype.getValues = function() {
 						totalValue += parseFloat( response[i].amount * response[i].price );
 					}
 				}
-				var averageValue = totalValue / totalCoins;
-				if( self.values.get( 'bitcoin' ))
+				if( totalCoins > 0 )
 				{
-					var maidToUsd = averageValue * self.values.get( 'bitcoin' );
-					self.values.set( {
-						'SP3': maidToUsd,
-						'SP3-source': 'https://masterxchange.com/'
-					});
+					var averageValue = totalValue / totalCoins;
+					if( self.values.get( 'bitcoin' ))
+					{
+						var maidToUsd = averageValue * self.values.get( 'bitcoin' );
+						self.values.set( {
+							'SP3': maidToUsd,
+							'SP3-source': 'https://masterxchange.com/'
+						});
+					}					
+				}
+				else
+				{
+					self.values.unset( 'SP3' );
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
