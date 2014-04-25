@@ -19,13 +19,60 @@ var CoinData = Backbone.Model.extend( {
 	
 	Map "currencyID-source" to source of the data. */
 });
+
+var NetworkStatus = Backbone.Model.extend( {
+	/* Map request ID (test.omniwallet.org:balance, etc.) 
+		to one of 'OK', 'In Progress', or FAILED */
+});
+
 var slimWalletData = {
 	"addressData": new AddressData(),
 	"balances": new BalanceData(),
 	"values": new ValueData(),
-	"coinData": new CoinData()
+	"coinData": new CoinData(),
+	"networkStatus": new NetworkStatus()
 }
 var workers = {};
+
+function Requestor( data ){
+	this.data = data;
+}
+Requestor.prototype.getJSON = function( id, url, success, failure ) {
+	var self = this;
+	var status = {};
+	status[ id ] = 'In Progress';
+	this.data.set( status );
+
+	$.getJSON( url )
+		.done( function( response ) {
+			status[ id ] = 'OK';
+			self.data.set( status );
+			success( response );
+		})
+		.error( function() {
+			status[ id ] = 'FAILED';
+			self.data.set( status );
+			failure();
+		});
+}
+Requestor.prototype.post = function( id, url, data, success, failure ) {
+	var self = this;
+	var status = {};
+	status[ id ] = 'In Progress';
+	this.data.set( status );
+
+	$.post( url, data, function( response )  {
+		status[ id ] = 'OK';
+		self.data.set( status );
+		success( response );
+	}).fail( function() {
+		status[ id ] = 'FAILED';
+		self.data.set( status );
+		failure();
+	});
+}
+
+var requestor = new Requestor( slimWalletData.networkStatus );
 
 var formatters = {
 	USD: function( value ){ return '$' + value.toFixed( 2 ) },
@@ -138,6 +185,11 @@ function attachModelListeners( data ) {
 					updateBalanceTable( v );
 				}
 			}
+	});
+
+	data.networkStatus.on( 'change', function( data ) {
+		console.log( '** Network status change!' );
+		console.log( data.changed );
 	});
 
 };
@@ -277,8 +329,10 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	var queriesMade = 0;
 
 	queriesMade++;
-	$.getJSON( 'https://btc.blockr.io/api/v1/address/info/' + originalAddress )
-		.done( function( response ) {
+	requestor.getJSON( 
+		'blockr.io:balance',
+		'https://btc.blockr.io/api/v1/address/info/' + originalAddress,
+		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
@@ -292,8 +346,8 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 			}
-		} )
-		.error( function() {
+		},
+		function() {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
@@ -303,8 +357,10 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	$.getJSON( 'https://masterchain.info/addr/' + originalAddress + '.json' )
-		.done( function( response ) {
+	requestor.getJSON( 
+		'masterchain.info:balance',
+		'https://masterchain.info/addr/' + originalAddress + '.json',
+		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
@@ -322,8 +378,8 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
 			}
-		} )
-		.error( function() {
+		},
+		function() {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
@@ -333,12 +389,15 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	$.post( 'https://test.omniwallet.org/v1/address/addr/',
+	requestor.post( 
+		'test.omniwallet.org:balance',
+		'https://test.omniwallet.org/v1/address/addr/',
 		{ addr: originalAddress },
 		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
+				console.log( response );
 				if( response.balance )
 				{
 					var structure = {};
@@ -367,7 +426,8 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
 			}
-		} ).fail( function() {
+		},
+		function() {
 			queriesComplete++;
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
@@ -376,7 +436,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
 	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
-/*	$.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
+/*	requestor.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
 		function( response ) {
 			if( originalAddress == self.addressModel.get( 'address '))
 			{
@@ -423,7 +483,9 @@ ValueQueryWorker.prototype.getValues = function() {
 	{
 
 		// This call actually tends to time out - an ideal situation for having multiple sources!
-		$.getJSON( 'http://btc.blockr.io/api/v1/exchangerate/current',
+		requestor.getJSON( 
+			'btc.blockr.io:value',
+			'http://btc.blockr.io/api/v1/exchangerate/current',
 			function( response ) {
 				if( response.code == 200 )
 				{
@@ -434,9 +496,14 @@ ValueQueryWorker.prototype.getValues = function() {
 					});
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			},
+			function() {
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
-		$.getJSON( 'https://api.bitcoinaverage.com/exchanges/USD',
+		requestor.getJSON( 
+			'bitcoinaverage.com:value',
+			'https://api.bitcoinaverage.com/exchanges/USD',
 			function( response ) {
 					console.log( 'BitcoinAverage response: ' );
 					console.log( response );
@@ -447,12 +514,17 @@ ValueQueryWorker.prototype.getValues = function() {
 						'bitcoin-source': 'http://btc.blockr.io',
 					});*/
 				//self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			},
+			function() {
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
 	}
 	else if( this.currency == 'MSC' )
 	{
-		$.getJSON( 'https://masterxchange.com/api/trades.php',
+		requestor.getJSON( 
+			'masterxchange.com:value',
+			'https://masterxchange.com/api/trades.php',
 			function( response ) {
 				var totalCoins = 0;
 				var totalValue = 0;
@@ -474,12 +546,17 @@ ValueQueryWorker.prototype.getValues = function() {
 					});
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			},
+			function() {
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
 	}
 	else if( this.currency == 'SP3' )
 	{
-		$.getJSON( 'https://masterxchange.com/api/trades.php',
+		requestor.getJSON( 
+			'masterxchange.com:value',
+			'https://masterxchange.com/api/trades.php',
 			function( response ) {
 				var totalCoins = 0;
 				var totalValue = 0;
@@ -507,6 +584,9 @@ ValueQueryWorker.prototype.getValues = function() {
 				{
 					self.values.unset( 'SP3' );
 				}
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			},
+			function() {
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
@@ -545,7 +625,9 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 
 	if( currency == 'bitcoin' )
 	{
-		$.getJSON( 'http://btc.blockr.io/api/v1/coin/info',
+		requestor.getJSON( 
+			'btc.blockr.io:' + currency + '-info',
+			'http://btc.blockr.io/api/v1/coin/info',
 			function( response ) {
 				if( response.code == 200 )
 				{
@@ -568,6 +650,9 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 					self.coinData.set( extractedData );
 				}*/
 				self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
+			},
+			function() {
+				self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 			}
 		);
 	}
@@ -576,7 +661,9 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 		var match = currency.match( /SP([0-9]+)/ )
 		if( match )
 		{
-			$.getJSON( 'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
+			requestor.getJSON( 
+				'test.omniwallet.org:' + currency + '-info',
+				'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
 				function( response ) {
 					if( response[0] )
 					{
@@ -589,6 +676,9 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 						}
 						self.coinData.set( extractedData );
 					}
+					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
+				},
+				function( response ) {
 					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 				}
 			);
