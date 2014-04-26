@@ -388,7 +388,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'blockr:balance',
+		'blockr:balances',
 		'https://btc.blockr.io/api/v1/address/info/' + originalAddress,
 		function( response ) {
 			queriesComplete++;
@@ -416,7 +416,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'Masterchain:balance',
+		'Masterchain:balances',
 		'https://masterchain.info/addr/' + originalAddress + '.json',
 		function( response ) {
 			queriesComplete++;
@@ -448,7 +448,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.post( 
-		'Omni Test:balance',
+		'Omni Test:balances',
 		'https://test.omniwallet.org/v1/address/addr/',
 		{ addr: originalAddress },
 		function( response ) {
@@ -492,7 +492,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
-		'MyMastercoins:balance',
+		'MyMastercoins:balances',
 		'http://mymastercoins.com/jaddressbalance.aspx?Address=' + originalAddress,
 		function( response ) {
 			queriesComplete++;
