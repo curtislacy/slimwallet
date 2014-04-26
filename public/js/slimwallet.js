@@ -257,9 +257,9 @@ function initModelData( data ) {
 };
 
 var balanceTableTemplate = _.template( "\
-	<div class=\"col-lg-12 hidden-xs\" id=\"<%= currency %>-balances\">\
+	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
             <h2 id=\"<%= currency %>-name\"><%= currencyName %></h2>\
-            <div class=\"table-responsive\">\
+            <div class=\"hidden-xs table-responsive\">\
               <table class=\"table table-hover table-striped tablesorter\">\
                 <thead>\
                   <tr>\
@@ -270,10 +270,15 @@ var balanceTableTemplate = _.template( "\
                 <tbody>\
                   <tr>\
                     <td><%= address %></td>\
-                    <td id=\"<%= currency %>-balance\"><%= balance %></td>\
+                    <td class=\"<%= currency %>-balance\"><%= balance %></td>\
                   </tr>\
                 </tbody>\
               </table>\
+            </div>\
+            <div class=\"visible-xs row\">\
+            	<div class=\"col-xs-6 text-right\">\
+            		<h5 class=\"<%= currency %>-balance\"><%= balance %></h5>\
+            	</div>\
             </div>\
     </div>\
 ");
@@ -307,7 +312,7 @@ function updateBalanceTable( currency ) {
 	}
 	else
 	{
-		$( '#balance-tables #' + currency + '-balances td#' + currency + '-balance' )
+		$( '#balance-tables #' + currency + '-balances .' + currency + '-balance' )
 			.html( '<a href="' + 
 					slimWalletData.balances.get( currency + '-source' ) + 
 					'">' +
