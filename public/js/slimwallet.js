@@ -107,15 +107,21 @@ function formatCurrency( currency, value ) {
 	}
 }
 
-var addressQR = null;
+var addressQRs = null;
 
 $( function() {
-	if( document.getElementById( "address-qr" ))
+	var elements = document.getElementsByClassName( "address-qr" );
+	console.log( elements );
+	if( elements.length > 0 )
 	{
-		addressQR = new QRCode( document.getElementById( "address-qr" ), {
-			width: 128,
-			height: 128
-		});		
+		for( var i=0; i<elements.length; i++ )
+		{
+			if( !addressQRs )
+				addressQRs = [];
+			addressQRs.push( new QRCode( elements[i], {
+				width: 128, height: 128
+			} ));
+		}
 	}
 
 	attachModelSetters( slimWalletData );
@@ -151,12 +157,14 @@ function attachModelListeners( data ) {
 	// Update the display of the currently viewed address in the UI.
 	data.addressData.on( 'change:address', function( data ) {
 		$( '#address-search input' ).attr( 'placeholder', data.changed.address );
-		$( '#address-display' ).text( data.changed.address );
+		$( '.address-display' ).text( data.changed.address );
 		window.document.title = 'SlimWallet - ' + data.changed.address;
-		if( addressQR )
+		if( addressQRs )
 		{
-			addressQR.clear();
-			addressQR.makeCode( data.changed.address );			
+			addressQRs.forEach( function( qr ) {
+				qr.clear();
+				qr.makeCode( data.changed.address );
+			});
 		}
 	} );
 
@@ -249,7 +257,7 @@ function initModelData( data ) {
 };
 
 var balanceTableTemplate = _.template( "\
-	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
+	<div class=\"col-lg-12 hidden-xs\" id=\"<%= currency %>-balances\">\
             <h2 id=\"<%= currency %>-name\"><%= currencyName %></h2>\
             <div class=\"table-responsive\">\
               <table class=\"table table-hover table-striped tablesorter\">\
