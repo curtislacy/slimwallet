@@ -279,6 +279,9 @@ var balanceTableTemplate = _.template( "\
             	<div class=\"col-xs-6 text-right\">\
             		<h5 class=\"<%= currency %>-balance\"><%= balance %></h5>\
             	</div>\
+            	<div class=\"col-xs-6 text-right\">\
+            		<h5 class=\"<%= currency %>-value\"></h5>\
+            	</div>\
             </div>\
     </div>\
 ");
@@ -332,24 +335,31 @@ function updateValues( currency ) {
 		{
 			var valueOfBalance = balance * slimWalletData.values.get( currency );
 
-			var outputFields = $( '#balance-tables #' + currency + '-balances td#' + currency + '-value' );
+			var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
+			console.log( '*** outputFields: ' );
+			console.log( outputFields );
 			if( outputFields.length == 0 )
 			{
 				$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
 					$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
 				$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
 					$( '<td>' )
-						.attr( 'id', currency + '-value')
+						.attr( 'class', currency + '-value')
 						.append( $( '<a>' )
 							.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
-							.text( formatCurrency( 'USD', valueOfBalance ))
 						)
 					);
+				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
+					.html( 
+						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
+						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
 			}
 			else
 			{
-				$( '#balance-tables #' + currency + '-balances tbody td#' + currency + '-value a' )
-					.text( formatCurrency( 'USD', valueOfBalance ));
+				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
+					.html( 
+						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
+						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
 			}
 
 		}
