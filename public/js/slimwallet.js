@@ -626,13 +626,13 @@ ValueQueryWorker.prototype.getValues = function() {
 	{
 		requestor.getJSON( 
 			'MasterXchange:value',
-			'https://masterxchange.com/api/trades.php',
+			'https://masterxchange.com/api/v2/trades.php?currency=msc',
 			function( response ) {
 				var totalCoins = 0;
 				var totalValue = 0;
 				for( var i = 0; i<response.length; i++ )
 				{
-					if( response[i].market == 'btc/msc' )
+					if( response[i].market == 'btc_msc' )
 					{
 						totalCoins += parseFloat( response[i].amount );
 						totalValue += parseFloat( response[i].amount * response[i].price );
@@ -658,13 +658,13 @@ ValueQueryWorker.prototype.getValues = function() {
 	{
 		requestor.getJSON( 
 			'MasterXchange:value',
-			'https://masterxchange.com/api/trades.php',
+			'https://masterxchange.com/api/v2/trades.php?currency=maid',
 			function( response ) {
 				var totalCoins = 0;
 				var totalValue = 0;
 				for( var i = 0; i<response.length; i++ )
 				{
-					if( response[i].market == 'btc/maid' )
+					if( response[i].market == 'btc_maid' )
 					{
 						totalCoins += parseFloat( response[i].amount );
 						totalValue += parseFloat( response[i].amount * response[i].price );
