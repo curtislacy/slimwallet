@@ -279,7 +279,7 @@ var balanceTableTemplate = _.template( "\
             	<div class=\"col-xs-6 text-right\">\
             		<h5 class=\"<%= currency %>-balance\"><%= balance %></h5>\
             	</div>\
-            	<div class=\"col-xs-6 text-right\">\
+            	<div class=\"col-xs-6 text-left\">\
             		<h5 class=\"<%= currency %>-value\"></h5>\
             	</div>\
             </div>\
