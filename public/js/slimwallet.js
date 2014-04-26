@@ -224,7 +224,7 @@ function updateNetworkStatus( uiKey, status, id, value ) {
 	if( status == value )
 	{
 		// Add the display.
-		$( '#' + uiKey + '-queries' ).append(
+		$( '.' + uiKey + '-queries' ).append(
 			$( '<div></div>' )
 				.attr( 'class', 'row' )
 				.attr( 'id', id )
@@ -243,7 +243,7 @@ function updateNetworkStatus( uiKey, status, id, value ) {
 	{
 		var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' ).replaceAll( ' ', '\\ ' );
 		// Remove the display.
-		$( '#' + uiKey + '-queries #' + escapedId ).remove();
+		$( '.' + uiKey + '-queries #' + escapedId ).remove();
 	}
 }
 
