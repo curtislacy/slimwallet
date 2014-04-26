@@ -586,7 +586,7 @@ ValueQueryWorker.prototype.getValues = function() {
 
 		// This call actually tends to time out - an ideal situation for having multiple sources!
 		requestor.getJSON( 
-			'blockr:value',
+			'blockr:value-btc',
 			'http://btc.blockr.io/api/v1/exchangerate/current',
 			function( response ) {
 				if( response.code == 200 )
@@ -604,7 +604,7 @@ ValueQueryWorker.prototype.getValues = function() {
 			}
 		);
 		requestor.getJSON( 
-			'BitcoinAverage:value',
+			'BitcoinAverage:value-btc',
 			'https://api.bitcoinaverage.com/exchanges/USD',
 			function( response ) {
 					console.log( 'BitcoinAverage response: ' );
@@ -625,7 +625,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	else if( this.currency == 'MSC' )
 	{
 		requestor.getJSON( 
-			'MasterXchange:value',
+			'MasterXchange:value-msc',
 			'https://masterxchange.com/api/v2/trades.php?currency=msc',
 			function( response ) {
 				var totalCoins = 0;
@@ -657,7 +657,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	else if( this.currency == 'SP3' )
 	{
 		requestor.getJSON( 
-			'MasterXchange:value',
+			'MasterXchange:value-sp3',
 			'https://masterxchange.com/api/v2/trades.php?currency=maid',
 			function( response ) {
 				var totalCoins = 0;
@@ -728,7 +728,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	if( currency == 'bitcoin' )
 	{
 		requestor.getJSON( 
-			'blockr:' + currency + '-info',
+			'blockr:info-bitcoin',
 			'http://btc.blockr.io/api/v1/coin/info',
 			function( response ) {
 				if( response.code == 200 )
@@ -763,7 +763,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 		if( match )
 		{
 			requestor.getJSON( 
-				'Omni Test:' + currency + '-info',
+				'Omni Test:info-' + currency,
 				'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
 				function( response ) {
 					if( response[0] )
