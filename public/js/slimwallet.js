@@ -258,31 +258,33 @@ function initModelData( data ) {
 
 var balanceTableTemplate = _.template( "\
 	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
-            <h2 id=\"<%= currency %>-name\"><%= currencyName %></h2>\
-            <div class=\"hidden-xs table-responsive\">\
-              <table class=\"table table-hover table-striped tablesorter\">\
-                <thead>\
-                  <tr>\
-                    <th>Address <i class=\"fa fa-sort\"></i></th>\
-                    <th>Balance <i class=\"fa fa-sort\"></i></th>\
-                  </tr>\
-                </thead>\
-                <tbody>\
-                  <tr>\
-                    <td><%= address %></td>\
-                    <td class=\"<%= currency %>-balance\"><%= balance %></td>\
-                  </tr>\
-                </tbody>\
-              </table>\
-            </div>\
-            <div class=\"visible-xs row\">\
-            	<div class=\"col-xs-6 text-right\">\
-            		<h5 class=\"<%= currency %>-balance\"><%= balance %></h5>\
-            	</div>\
-            	<div class=\"col-xs-6 text-left\">\
-            		<h5 class=\"<%= currency %>-value\"></h5>\
-            	</div>\
-            </div>\
+        <h2 class=\"hidden-xs <%= currency %>-name\"><%= currencyName %></h2>\
+        <div class=\"hidden-xs table-responsive\">\
+          <table class=\"table table-hover table-striped tablesorter\">\
+            <thead>\
+              <tr>\
+                <th>Address <i class=\"fa fa-sort\"></i></th>\
+                <th>Balance <i class=\"fa fa-sort\"></i></th>\
+              </tr>\
+            </thead>\
+            <tbody>\
+              <tr>\
+                <td><%= address %></td>\
+                <td class=\"<%= currency %>-balance\"><%= balance %></td>\
+              </tr>\
+            </tbody>\
+          </table>\
+        </div>\
+        <h3 class=\"visible-xs <%= currency %>-name\"><%= currencyName %></h2>\
+        <div class=\"visible-xs row\">\
+        	<div class=\"col-xs-6 text-right\">\
+        		<h4 class=\"<%= currency %>-balance\"><%= balance %></h5>\
+        	</div>\
+        	<div class=\"col-xs-6 text-left\">\
+        		<h4 class=\"<%= currency %>-value\"></h5>\
+        	</div>\
+        </div>\
+        <hr class=\"visible-xs\" />\
     </div>\
 ");
 function updateBalanceTable( currency ) {
@@ -336,8 +338,6 @@ function updateValues( currency ) {
 			var valueOfBalance = balance * slimWalletData.values.get( currency );
 
 			var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
-			console.log( '*** outputFields: ' );
-			console.log( outputFields );
 			if( outputFields.length == 0 )
 			{
 				$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
@@ -370,7 +370,7 @@ function updateCoinData( currency ) {
 	var data = slimWalletData.coinData.get( currency );
 	if( data != null )
 	{
-		$( '#balance-tables #' + currency + '-balances #' + currency + '-name' )
+		$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
 			.text( data.name );
 	}
 }
