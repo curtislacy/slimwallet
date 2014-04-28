@@ -111,7 +111,6 @@ var addressQRs = null;
 
 $( function() {
 	var elements = document.getElementsByClassName( "address-qr" );
-	console.log( elements );
 	if( elements.length > 0 )
 	{
 		for( var i=0; i<elements.length; i++ )
@@ -345,21 +344,16 @@ function updateValues( currency ) {
 				$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
 					$( '<td>' )
 						.attr( 'class', currency + '-value')
-						.append( $( '<a>' )
-							.attr( 'href', slimWalletData.values.get( currency + '-source' ) )
-						)
+						
 					);
 				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.html( 
-						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
-						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+					.text( 
+						formatCurrency( 'USD', valueOfBalance ) );
 			}
 			else
 			{
 				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.html( 
-						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
-						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+					.text( formatCurrency( 'USD', valueOfBalance ) );
 			}
 
 		}
@@ -594,41 +588,160 @@ ValueQueryWorker.prototype.getValues = function() {
 	if( this.currency == 'bitcoin' )
 	{
 
+		var requestsMade = 0;
+		var requestsDone = 0;
+		var results = [];
+
+
 		// This call actually tends to time out - an ideal situation for having multiple sources!
+		requestsMade++;
 		requestor.getJSON( 
 			'blockr:value-btc',
 			'http://btc.blockr.io/api/v1/exchangerate/current',
 			function( response ) {
+				requestsDone++;
 				if( response.code == 200 )
 				{
 					var usdToBtc = parseFloat( response.data[0].rates.BTC );
-					self.values.set( {
+					results.push( {
 						'bitcoin': 1.0 / usdToBtc,
-						'bitcoin-source': 'http://btc.blockr.io',
+						'bitcoin-source': 'http://blockr.io'
 					});
 				}
-				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				if( requestsMade == requestsDone )
+				{
+					if( results.length == 1 )
+					{
+						self.values.set( {
+							'bitcoin': results[0].bitcoin,
+							'bitcoin-source': results[0][ 'bitcoin-source' ],
+						});
+
+					}
+					else
+					{
+						var sum = 0;
+						for( var i = 0; i<results.length; i++ )
+						{
+							sum += results[i].bitcoin;
+
+						}
+						self.values.set( {
+							'bitcoin': sum / results.length,
+							'bitcoin-source': 'COMPOSITE'
+						});
+					}
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				}
 			},
 			function() {
-				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				requestsDone++;
+				if( requestsMade == requestsDone )
+				{
+					if( results.length == 1 )
+					{
+						self.values.set( {
+							'bitcoin': results[0].bitcoin,
+							'bitcoin-source': results[0][ 'bitcoin-source' ],
+						});
+
+					}
+					else
+					{
+						var sum = 0;
+						for( var i = 0; i<results.length; i++ )
+						{
+							sum += results[i].bitcoin;
+
+						}
+						self.values.set( {
+							'bitcoin': sum / results.length,
+							'bitcoin-source': 'COMPOSITE',
+						});
+					}
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				}
 			}
 		);
+
+		requestsMade++;
 		requestor.getJSON( 
 			'BitcoinAverage:value-btc',
 			'https://api.bitcoinaverage.com/exchanges/USD',
 			function( response ) {
-					console.log( 'BitcoinAverage response: ' );
-					console.log( response );
-//					if( response )
-/*					var usdToBtc = parseFloat( response.data[0].rates.BTC );
-					self.values.set( {
-						'bitcoin': 1.0 / usdToBtc,
-						'bitcoin-source': 'http://btc.blockr.io',
-					});*/
-				//self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				requestsDone++;
+				if( response )
+				{
+					var sum = 0;
+					var count = 0;
+					for( var k in response )
+					{
+						if( response.hasOwnProperty( k ) && response[ k ].rates )
+						{
+							sum += response[ k ].rates.last;
+							count++;
+						}
+					}
+					if( count > 0 ) {
+						var usdToBtc = sum / count;
+						results.push( {
+							'bitcoin': usdToBtc,
+							'bitcoin-source': 'http://bitcoinaverage.com'
+						});
+					}
+				}
+				if( requestsMade == requestsDone )
+				{
+					if( results.length == 1 )
+					{
+						self.values.set( {
+							'bitcoin': results[0].bitcoin,
+							'bitcoin-source': results[0][ 'bitcoin-source' ],
+						});
+
+					}
+					else
+					{
+						var sum = 0;
+						for( var i = 0; i<results.length; i++ )
+						{
+							sum += results[i].bitcoin;
+						}
+						self.values.set( {
+							'bitcoin': sum / results.length,
+							'bitcoin-source': 'COMPOSITE',
+						});
+					}
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				}
 			},
 			function() {
-				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				requestsDone++;
+				if( requestsMade == requestsDone )
+				{
+					if( results.length == 1 )
+					{
+						self.values.set( {
+							'bitcoin': results[0].bitcoin,
+							'bitcoin-source': results[0][ 'bitcoin-source' ],
+						});
+
+					}
+					else
+					{
+						var sum = 0;
+						for( var i = 0; i<results.length; i++ )
+						{
+							sum += results[i].bitcoin;
+
+						}
+						self.values.set( {
+							'bitcoin': sum / results.length,
+							'bitcoin-source': 'COMPOSITE',
+						});
+					}
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				}
 			}
 		);
 	}
