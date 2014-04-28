@@ -83,7 +83,7 @@ var formatters = {
 	MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
 	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
 	SPdivisible: function( value ) {
-		return value.toFixed( 8 );
+		return ( value / 100000000 ).toFixed( 8 );
 	},
 	SPindivisible: function( value ) {
 		return value.toFixed( 0 );
