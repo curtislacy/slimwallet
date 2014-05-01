@@ -167,6 +167,9 @@ function attachModelListeners( data ) {
 		}
 	} );
 
+	data.balances.on( 'change', updateTotalSum );
+	data.values.on( 'change', updateTotalSum );
+
 	data.balances.on( 'change', function( data ) {
 		for( var v in data.changed )
 			if( data.changed.hasOwnProperty( v ))
@@ -184,6 +187,7 @@ function attachModelListeners( data ) {
 					updateValues( v );
 			}
 	});
+
 
 	data.coinData.on( 'change', function( data ) {
 		for( var v in data.changed )
@@ -327,6 +331,29 @@ function updateBalanceTable( currency ) {
 	// We'll need to update the values, if they exist.
 	updateValues( currency );
 }
+
+function updateTotalSum() {
+	var sum = 0;
+	for( var currencyKey in slimWalletData.values.attributes )
+	{
+		if( currencyKey.indexOf( '-source' ) != currencyKey.length - 7 )
+		{
+			var currencyBalance = slimWalletData.balances.get( currencyKey );
+			if( currencyBalance > 0 )
+				sum += currencyBalance * slimWalletData.values.get( currencyKey );
+		}
+	}
+	if( sum > 0 )
+	{
+		$( '.total-asset-value' ).text( formatCurrency( 'USD', sum ));
+		$( '#total-assets-display' ).removeClass( 'hidden' );
+	}
+	else
+	{
+		$( '#total-assets-display' ).addClass( 'hidden' );
+	}
+}
+
 function updateValues( currency ) {
 	var balance = slimWalletData.balances.get( currency );
 	if( balance != null )
