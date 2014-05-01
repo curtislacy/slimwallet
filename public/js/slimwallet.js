@@ -118,7 +118,7 @@ $( function() {
 			if( !addressQRs )
 				addressQRs = [];
 			addressQRs.push( new QRCode( elements[i], {
-				width: 128, height: 128
+				width: 192, height: 192
 			} ));
 		}
 	}
@@ -346,11 +346,11 @@ function updateTotalSum() {
 	if( sum > 0 )
 	{
 		$( '.total-asset-value' ).text( formatCurrency( 'USD', sum ));
-		$( '#total-assets-display' ).removeClass( 'hidden' );
+		$( '.total-assets-display' ).removeClass( 'hidden' );
 	}
 	else
 	{
-		$( '#total-assets-display' ).addClass( 'hidden' );
+		$( '.total-assets-display' ).addClass( 'hidden' );
 	}
 }
 

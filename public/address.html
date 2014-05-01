@@ -107,17 +107,24 @@
         </div>
 
         <div class="row">
-          <div class="col-xs-8 hidden-xs">
+          <div class="col-xs-7 hidden-xs">
             <h1>Address Detail</h1>
             <h5><span class="address-display"></span></h5>
-            <!--<ol class="breadcrumb">
-              <li class="active"><i class="fa fa-dashboard"></i> Dashboard</li>
-            </ol>-->
+            <div class="row hidden-xs">
+              <div class="col-xs-12 text-left">
+                <h2>Total Assets</h2>
+              </div>
+              <div class="col-xs-12 text-center">
+                <h3 class="total-asset-value"></h3>
+              </div>
+            </div>
+          
+            <div class="visible-xs col-xs-12 text-center">
+              <h4><div class="address-display"></div></h3>
+            </div>
           </div>
-          <div class="visible-xs col-xs-12 text-center">
-            <h4><div class="address-display"></div></h3>
-          </div>
-          <div class="hidden-xs col-sm-4 center-block">
+
+          <div class="hidden-xs col-sm-5 center-block">
             <div class="address-qr"></div>
           </div>
           <div class="visible-xs col-xs-12">
@@ -125,18 +132,10 @@
           </div>
         </div><!-- /.row -->
 
-        <div id="total-assets-display" class="hidden">
+        <div class="hidden total-assets-display">
           <div class="row visible-xs">
             <div class="col-xs-12 text-center">
               <h4>Total Asset Value: <span class="total-asset-value"></span></h4>
-            </div>
-          </div>
-          <div class="row hidden-xs">
-            <div class="col-xs-12 text-left">
-              <h2>Total Assets</h2>
-            </div>
-            <div class="col-xs-12 text-center">
-              <h3 class="total-asset-value"></h3>
             </div>
           </div>
         </div>
