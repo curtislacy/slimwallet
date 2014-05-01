@@ -79,7 +79,7 @@ var requestor = new Requestor( slimWalletData.networkStatus );
 
 var formatters = {
 	USD: function( value ){ return '$' + value.toFixed( 2 ) },
-	bitcoin: function( value ) { return ( value * 1000 ).toFixed( 8 ) + ' mBTC' },
+	bitcoin: function( value ) { return ( value ).toFixed( 8 ) + ' BTC' },
 	MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
 	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
 	SPdivisible: function( value ) {
