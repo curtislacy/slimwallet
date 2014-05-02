@@ -447,6 +447,34 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
+		'insight.is:balances',
+		'http://live.insight.is/api/addr/' + originalAddress,
+		function( response ) {
+			queriesComplete++;
+			if( originalAddress == self.addressModel.get( 'address' ))
+			{
+				if( response.balance )
+				{
+					self.balances.set( { 
+						'bitcoin': response.balance,
+						'bitcoin-source': 'http://live.insight.is/api/addr/' + originalAddress 
+					});
+				}
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
+			}
+		},
+		function() {
+			queriesComplete++;
+			if( originalAddress == self.addressModel.get( 'address' ))
+			{
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+			}
+		});
+
+	queriesMade++;
+	requestor.getJSON( 
 		'Masterchain:balances',
 		'https://masterchain.info/addr/' + originalAddress + '.json',
 		function( response ) {
