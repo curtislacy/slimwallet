@@ -483,7 +483,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				{
 					facilitator.nominateValue( 
 						'balance-bitcoin', self.balanceSetter, 
-						'https://btc.blockr.io/address/info/' + originalAddress,
+						'https://btc.blockr.io',
 						response.data.balance );
 				}
 				if( queriesComplete == queriesMade )
@@ -511,7 +511,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				{
 					facilitator.nominateValue(
 						'balance-bitcoin', self.balanceSetter,
-						'http://live.insight.is/api/addr/' + originalAddress,
+						'http://live.insight.is/',
 						response.balance );
 				}
 				if( queriesComplete == queriesMade )
