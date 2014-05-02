@@ -76,7 +76,12 @@ Requestor.prototype.post = function( id, url, data, success, failure ) {
 }
 
 var requestor = new Requestor( slimWalletData.networkStatus );
-
+// Not a real median, this picks the lower of the two middle values if the array is even in length
+function getPseudoMedian(values) {
+    values.sort( function(a,b) {return a - b;} );
+    var half = Math.floor(values.length/2);
+    return values[half];
+}
 function ConsensusFacilitator() {
 	this.values = {};
 }
@@ -86,31 +91,33 @@ ConsensusFacilitator.prototype.nominateValue = function( valueKey, setter, sourc
 	}
 	this.values[ valueKey ][ source ] = value;
 
-	var valueVotes = {};
-	var distinctVotes = 0;
-	var participants = 0;
+	var firstValue = null;
+	var allEqual = true;
+	var allValues = [];
+	var valueLookup = {};
+
 	for( var k in this.values[ valueKey ])
 		if( this.values[ valueKey ].hasOwnProperty( k ))
 		{
-			if( valueVotes[ value ])
-				valueVotes[ value ]++;
+			var candidateValue = this.values[ valueKey ][ k ];
+
+			if( firstValue == null )
+				firstValue = candidateValue;
 			else
-			{
-				valueVotes[ value ] = 1;
-				distinctVotes++;
-			}
-			participants ++;
+				if( firstValue != candidateValue )
+					allEqual = false;
+
+			allValues.push( candidateValue );
+			valueLookup[ candidateValue ] = k;
 		}
-	if( distinctVotes == 1 )
+	if( allEqual )
 	{
-		console.log( 'Consensus Okay for: ' + valueKey + ' with ' + participants + ' sources' );
 		setter( valueKey, source, value );
 	}
 	else
 	{
-		console.log( '*** Out of consensus for ' + valueKey + '!' );
-		console.log( '    TODO: Deal with this!:' );
-		console.log( this.values[ valueKey ] );
+		var median = getPseudoMedian( allValues );
+		setter( valueKey, valueLookup[ median ], median );
 	}
 }
 
@@ -681,6 +688,13 @@ function ValueQueryWorker( data ) {
 			}
 		}
 	});
+	this.valueSetter = ( function( valueKey, source, value ) {
+		var dataToSet = {};
+		var key = valueKey.substring( 6 );
+		dataToSet[ key ] = value;
+		dataToSet[ key + '-source' ] = source;
+		this.values.set( dataToSet );
+	} ).bind( this );
 }
 ValueQueryWorker.prototype.addCurrency = function( currency ) {
 	this.loops[ currency ] = setTimeout( this.getValues.bind( {
@@ -710,34 +724,12 @@ ValueQueryWorker.prototype.getValues = function() {
 				if( response.code == 200 )
 				{
 					var usdToBtc = parseFloat( response.data[0].rates.BTC );
-					results.push( {
-						'bitcoin': 1.0 / usdToBtc,
-						'bitcoin-source': 'http://blockr.io'
-					});
+					facilitator.nominateValue( 
+						'value-bitcoin', self.valueSetter,
+						'http://blockr.io', 1.0 / usdToBtc );
 				}
 				if( requestsMade == requestsDone )
 				{
-					if( results.length == 1 )
-					{
-						self.values.set( {
-							'bitcoin': results[0].bitcoin,
-							'bitcoin-source': results[0][ 'bitcoin-source' ],
-						});
-
-					}
-					else
-					{
-						var sum = 0;
-						for( var i = 0; i<results.length; i++ )
-						{
-							sum += results[i].bitcoin;
-
-						}
-						self.values.set( {
-							'bitcoin': sum / results.length,
-							'bitcoin-source': 'COMPOSITE'
-						});
-					}
 					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 				}
 			},
@@ -745,27 +737,6 @@ ValueQueryWorker.prototype.getValues = function() {
 				requestsDone++;
 				if( requestsMade == requestsDone )
 				{
-					if( results.length == 1 )
-					{
-						self.values.set( {
-							'bitcoin': results[0].bitcoin,
-							'bitcoin-source': results[0][ 'bitcoin-source' ],
-						});
-
-					}
-					else
-					{
-						var sum = 0;
-						for( var i = 0; i<results.length; i++ )
-						{
-							sum += results[i].bitcoin;
-
-						}
-						self.values.set( {
-							'bitcoin': sum / results.length,
-							'bitcoin-source': 'COMPOSITE',
-						});
-					}
 					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 				}
 			}
@@ -785,40 +756,15 @@ ValueQueryWorker.prototype.getValues = function() {
 					{
 						if( response.hasOwnProperty( k ) && response[ k ].rates )
 						{
-							sum += response[ k ].rates.last;
-							count++;
+							facilitator.nominateValue( 
+								'value-bitcoin', self.valueSetter,
+								response[k].display_URL,
+								response[ k ].rates.last );
 						}
-					}
-					if( count > 0 ) {
-						var usdToBtc = sum / count;
-						results.push( {
-							'bitcoin': usdToBtc,
-							'bitcoin-source': 'http://bitcoinaverage.com'
-						});
 					}
 				}
 				if( requestsMade == requestsDone )
 				{
-					if( results.length == 1 )
-					{
-						self.values.set( {
-							'bitcoin': results[0].bitcoin,
-							'bitcoin-source': results[0][ 'bitcoin-source' ],
-						});
-
-					}
-					else
-					{
-						var sum = 0;
-						for( var i = 0; i<results.length; i++ )
-						{
-							sum += results[i].bitcoin;
-						}
-						self.values.set( {
-							'bitcoin': sum / results.length,
-							'bitcoin-source': 'COMPOSITE',
-						});
-					}
 					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 				}
 			},
@@ -826,27 +772,6 @@ ValueQueryWorker.prototype.getValues = function() {
 				requestsDone++;
 				if( requestsMade == requestsDone )
 				{
-					if( results.length == 1 )
-					{
-						self.values.set( {
-							'bitcoin': results[0].bitcoin,
-							'bitcoin-source': results[0][ 'bitcoin-source' ],
-						});
-
-					}
-					else
-					{
-						var sum = 0;
-						for( var i = 0; i<results.length; i++ )
-						{
-							sum += results[i].bitcoin;
-
-						}
-						self.values.set( {
-							'bitcoin': sum / results.length,
-							'bitcoin-source': 'COMPOSITE',
-						});
-					}
 					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 				}
 			}
