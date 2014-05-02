@@ -85,12 +85,33 @@ ConsensusFacilitator.prototype.nominateValue = function( valueKey, setter, sourc
 		this.values[ valueKey ] = {};
 	}
 	this.values[ valueKey ][ source ] = value;
-	console.log( '*** New nomination for ' + valueKey + ', all values: ' );
-	console.log( this.values[ valueKey ] );
-	setter( valueKey, source, value );
-}
-ConsensusFacilitator.prototype.resetVotes = function( valueKey ) {
-	this.values[ valueKey ] = {};
+
+	var valueVotes = {};
+	var distinctVotes = 0;
+	var participants = 0;
+	for( var k in this.values[ valueKey ])
+		if( this.values[ valueKey ].hasOwnProperty( k ))
+		{
+			if( valueVotes[ value ])
+				valueVotes[ value ]++;
+			else
+			{
+				valueVotes[ value ] = 1;
+				distinctVotes++;
+			}
+			participants ++;
+		}
+	if( distinctVotes == 1 )
+	{
+		console.log( 'Consensus Okay for: ' + valueKey + ' with ' + participants + ' sources' );
+		setter( valueKey, source, value );
+	}
+	else
+	{
+		console.log( '*** Out of consensus for ' + valueKey + '!' );
+		console.log( '    TODO: Deal with this!:' );
+		console.log( this.values[ valueKey ] );
+	}
 }
 
 var facilitator = new ConsensusFacilitator();
@@ -425,8 +446,9 @@ function BalanceQueryWorker( data ) {
 
 	this.balanceSetter = ( function( valueKey, source, value ) {
 		var dataToSet = {};
-		dataToSet[ valueKey ] = value;
-		dataToSet[ valueKey + '-source' ] = source;
+		var key = valueKey.substring( 8 );
+		dataToSet[ key ] = value;
+		dataToSet[ key + '-source' ] = source;
 		this.balances.set( dataToSet );
 	} ).bind( this );
 }
@@ -453,7 +475,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				if( response.code == 200 )
 				{
 					facilitator.nominateValue( 
-						'bitcoin', self.balanceSetter, 
+						'balance-bitcoin', self.balanceSetter, 
 						'https://btc.blockr.io/address/info/' + originalAddress,
 						response.data.balance );
 				}
@@ -481,7 +503,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				if( response.balance )
 				{
 					facilitator.nominateValue(
-						'bitcoin', self.balanceSetter,
+						'balance-bitcoin', self.balanceSetter,
 						'http://live.insight.is/api/addr/' + originalAddress,
 						response.balance );
 				}
@@ -547,21 +569,21 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						if( item.symbol == 'BTC' )
 						{
 							facilitator.nominateValue( 
-								'bitcoin', self.balanceSetter,
+								'balance-bitcoin', self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value / 100000000 );
 						}
 						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
 						{
 							facilitator.nominateValue( 
-								item.symbol, self.balanceSetter,
+								'balance-' + item.symbol, self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value / 100000000 );
 						}
 						else
 						{
 							facilitator.nominateValue( 
-								item.symbol, self.balanceSetter,
+								'balance-' + item.symbol, self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value );
 						}
