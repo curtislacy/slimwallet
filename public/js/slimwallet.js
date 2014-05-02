@@ -420,13 +420,16 @@ function updateValues( currency ) {
 						
 					);
 				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.text( 
-						formatCurrency( 'USD', valueOfBalance ) );
+					.html( 
+						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
+						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
 			}
 			else
 			{
 				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.text( formatCurrency( 'USD', valueOfBalance ) );
+					.html( 
+						'<a href=\"' + slimWalletData.values.get( currency + '-source' ) + '\">' 
+						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
 			}
 
 		}
