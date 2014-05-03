@@ -348,6 +348,7 @@ function updateBalanceTable( currency ) {
 			var currencyName = currency;
 			if( coinData && coinData.name )
 				currencyName = coinData.name;
+			var url = coinData ? coinData.url : null;
 
 			$( '#balance-tables' ).append( $( balanceTableTemplate( 
 				{ 
@@ -932,6 +933,14 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 							"name": response[0].propertyName + ' (#' + match[1] + ')',
 							"description": response[0].propertyData,
 							"divisible": parseInt( response[0].property_type ) == 2
+						}
+						var url = response[0].propertyUrl;
+						if( url )
+						{
+							url = url.toLowerCase().replace(/ +/g,'_').replace(/[0-9]/g,'').replace(/[^a-z0-9-_.]/g,'').trim();
+							if( !url.match( /^[a-z]+:\/\// ))
+								url = 'http://' + url;
+							extractedData[ currency ].url = url;
 						}
 						self.coinData.set( extractedData );
 					}
