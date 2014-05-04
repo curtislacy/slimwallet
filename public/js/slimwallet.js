@@ -37,7 +37,14 @@ var workers = {};
 function Requestor( data ){
 	this.data = data;
 }
-Requestor.prototype.getJSON = function( id, url, success, failure ) {
+Requestor.prototype.getJSON = function( id, url, query, success, failure ) {
+	if( typeof query == 'function' )
+	{
+		failure = success;
+		success = query;
+		query = null;
+	}
+
 	var self = this;
 	var status = {};
 	status[ id ] = 'In Progress';
@@ -46,6 +53,7 @@ Requestor.prototype.getJSON = function( id, url, success, failure ) {
 	$.ajax( {
 		"url": url,
 		"dataType": 'json',
+		"data": query,
 		timeout: 15000
 	}).done( function( response ) {
 			status[ id ] = 'OK';
@@ -243,6 +251,8 @@ function attachModelListeners( data ) {
 				{
 					updateCoinData( v );
 					updateBalanceTable( v );
+					if( data.changed[ v ].url )
+						locateIcon( v, data.changed[ v ].url );
 				}
 			}
 	});
@@ -258,6 +268,21 @@ function attachModelListeners( data ) {
 	});
 
 };
+
+function locateIcon( currency, url )
+{
+	var host = url.match( /https?:\/\/([a-zA-Z.]+)/ )[1];
+
+	requestor.getJSON( 
+		host + ':icon',
+		'/findfavicon', { 'url': url }, 
+		function( response ) {
+			if( response.valid )
+				console.log( '** Favicon found: ' + response.url );
+			else
+				console.error( 'No favicon available for ' + url, response );
+		}, function( error ){} );
+}
 
 String.prototype.replaceAll = function(search, replace)
 {
@@ -441,9 +466,6 @@ function updateCoinData( currency ) {
 	var data = slimWalletData.coinData.get( currency );
 	if( data != null )
 	{
-		console.log( '*** CoinData URL:' );
-		console.log( data.url );
-
 		if( data.url )
 		{
 			$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
