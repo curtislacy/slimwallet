@@ -1,6 +1,5 @@
 var express = require('express');
-var http = require( 'http' );
-var https = require( 'https' );
+var request = require( 'request' );
 var cheerio = require( 'cheerio' );
  
 var app = express();
@@ -35,46 +34,42 @@ app.get( '/findfavicon', function( req, res ) {
 		}
 		else
 		{
-			var requestor = match[1] == 'https' ? https : http;
-			requestor.get( url, function( response ) {
-				if( response.statusCode == 200 )
+			request.get( url, function( error, message, response ) {
+				if( error )
 				{
-					var data = '';
-					response.on( 'data', function( result ) {
-						data += result.toString( 'utf-8' );
-					});
-					response.on( 'end', function( result ) {
-						try {
-							var $ = cheerio.load( data );
-							var found = false;
-							$( 'link' ).each( function( element ) {
-								if( !found && this.attribs.rel == 'shortcut icon' )
-								{
-									found = true;
-									var iconUrl = this.attribs.href;
-									if( !iconUrl.match( /(https?):\/\/\S+$/ ) )
-										iconUrl = url + iconUrl;
-									faviconCache[ url ] = {
-										'url': iconUrl,
-										'timestamp': new Date().getTime()
-									};
-									res.json( { 'valid': true, 'url': iconUrl });
-								}
-							});
-							if( !found )
-								res.json( { 'valid': false });
-
-						} catch( e ) {
-							res.json( { 'valid': false, 'error': e.toString() });
-						}
-					});
+					res.json( { 'valid': false, 'error': error.toString() });
 				}
 				else
 				{
-					res.json( { 'valid': false, 'statusCode': response.statusCode });
+					try {
+						var $ = cheerio.load( response );
+						var found = false;
+						$( 'link' ).each( function( element ) {
+							if( !found && this.attribs.rel == 'shortcut icon' )
+							{
+								found = true;
+								var iconUrl = this.attribs.href;
+								if( !iconUrl.match( /(https?):\/\/\S+$/ ) )
+								{
+									if( iconUrl.substring( 0,1 ) == '/' )
+										iconUrl = url + iconUrl;
+									else
+										iconUrl = url + '/' + iconUrl;
+								}
+								faviconCache[ url ] = {
+									'url': iconUrl,
+									'timestamp': new Date().getTime()
+								};
+								res.json( { 'valid': true, 'url': iconUrl });
+							}
+						});
+						if( !found )
+							res.json( { 'valid': false });
+
+					} catch( e ) {
+						res.json( { 'valid': false, 'error': e.toString() });
+					}
 				}
-			} ).on( 'error', function( e ) {
-				res.json( { 'valid': false, 'error': e.toString() });
 			});
 		}
 	}
