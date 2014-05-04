@@ -19,7 +19,9 @@ var CoinData = Backbone.Model.extend( {
 	
 	Map "currencyID-source" to source of the data. */
 });
-
+var CoinIcons = Backbone.Model.extend( {
+	/* Map currencyID to a favicon provided by the currency issuer. */
+});
 var NetworkStatus = Backbone.Model.extend( {
 	/* Map request ID (test.omniwallet.org:balance, etc.) 
 		to one of 'OK', 'In Progress', or FAILED */
@@ -30,7 +32,8 @@ var slimWalletData = {
 	"balances": new BalanceData(),
 	"values": new ValueData(),
 	"coinData": new CoinData(),
-	"networkStatus": new NetworkStatus()
+	"networkStatus": new NetworkStatus(),
+	"coinIcons": new CoinIcons()
 }
 var workers = {};
 
@@ -267,6 +270,20 @@ function attachModelListeners( data ) {
 		}
 	});
 
+	data.coinIcons.on( 'change', function( data ) {
+		for( var v in data.changed )
+		{
+			if( data.changed.hasOwnProperty( v ) ){
+				console.log( '** Favicon found for ' + v + ': ' + data.changed[ v ] );
+				$( '.' + v + '-name' ).prepend(
+					$( '<img />' )
+						.attr( 'src', data.changed[ v ] )
+						.attr( 'id', v + '-icon' )
+						.attr( 'class', 'currency-icon' )
+				);
+			};
+		}
+	});
 };
 
 function locateIcon( currency, url )
@@ -278,7 +295,11 @@ function locateIcon( currency, url )
 		'/findfavicon', { 'url': url }, 
 		function( response ) {
 			if( response.valid )
-				console.log( '** Favicon found: ' + response.url );
+			{
+				var toSet = {};
+				toSet[ currency ] = response.url;
+				slimWalletData.coinIcons.set( toSet );
+			}
 			else
 				console.error( 'No favicon available for ' + url, response );
 		}, function( error ){} );
