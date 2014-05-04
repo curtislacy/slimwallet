@@ -4,6 +4,7 @@ var https = require( 'https' );
 var cheerio = require( 'cheerio' );
  
 var app = express();
+var faviconCache = {};
  
 app.configure(function () {
     app.use(express.logger('dev'));     /* 'default', 'short', 'tiny', 'dev' */
@@ -26,43 +27,56 @@ app.get( '/findfavicon', function( req, res ) {
 	var match = url.match( /(https?):\/\/\S+$/ );
 	if( match )
 	{
-		var requestor = match[1] == 'https' ? https : http;
-		requestor.get( url, function( response ) {
-			if( response.statusCode == 200 )
-			{
-				var data = '';
-				response.on( 'data', function( result ) {
-					data += result.toString( 'utf-8' );
-				});
-				response.on( 'end', function( result ) {
-					try {
-						var $ = cheerio.load( data );
-						var found = false;
-						$( 'link' ).each( function( element ) {
-							if( !found && this.attribs.rel == 'shortcut icon' )
-							{
-								var iconUrl = this.attribs.href;
-								if( iconUrl.match( /(https?):\/\/\S+$/ ) )
-									res.json( { 'valid': true, 'url': iconUrl });
-								else
-									res.json( { 'valid': true, 'url': url + iconUrl });
-							}
-						});
-						if( !found )
-							res.json( { 'valid': false });
+		var cachedValue = faviconCache[ url ];
 
-					} catch( e ) {
-						res.json( { 'valid': false, 'error': e.toString() });
-					}
-				});
-			}
-			else
-			{
-				res.json( { 'valid': false, 'statusCode': response.statusCode });
-			}
-		} ).on( 'error', function( e ) {
-			res.json( { 'valid': false, 'error': e.toString() });
-		});
+		if( cachedValue && (( new Date().getTime() - cachedValue.timestamp  ) < 600000 ))
+		{
+			res.json( { 'valid': true, 'url': cachedValue.url });
+		}
+		else
+		{
+			var requestor = match[1] == 'https' ? https : http;
+			requestor.get( url, function( response ) {
+				if( response.statusCode == 200 )
+				{
+					var data = '';
+					response.on( 'data', function( result ) {
+						data += result.toString( 'utf-8' );
+					});
+					response.on( 'end', function( result ) {
+						try {
+							var $ = cheerio.load( data );
+							var found = false;
+							$( 'link' ).each( function( element ) {
+								if( !found && this.attribs.rel == 'shortcut icon' )
+								{
+									found = true;
+									var iconUrl = this.attribs.href;
+									if( !iconUrl.match( /(https?):\/\/\S+$/ ) )
+										iconUrl = url + iconUrl;
+									faviconCache[ url ] = {
+										'url': iconUrl,
+										'timestamp': new Date().getTime()
+									};
+									res.json( { 'valid': true, 'url': iconUrl });
+								}
+							});
+							if( !found )
+								res.json( { 'valid': false });
+
+						} catch( e ) {
+							res.json( { 'valid': false, 'error': e.toString() });
+						}
+					});
+				}
+				else
+				{
+					res.json( { 'valid': false, 'statusCode': response.statusCode });
+				}
+			} ).on( 'error', function( e ) {
+				res.json( { 'valid': false, 'error': e.toString() });
+			});
+		}
 	}
 	else
 		res.json( { 'valid': false });
