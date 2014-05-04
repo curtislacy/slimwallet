@@ -441,8 +441,19 @@ function updateCoinData( currency ) {
 	var data = slimWalletData.coinData.get( currency );
 	if( data != null )
 	{
-		$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
-			.text( data.name );
+		console.log( '*** CoinData URL:' );
+		console.log( data.url );
+
+		if( data.url )
+		{
+			$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
+				.html( '<a href="' + data.url + '">' + data.name + '</a>' );
+		}
+		else
+		{
+			$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
+				.text( data.name );						
+		}
 	}
 }
 
@@ -894,7 +905,8 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 				{
 					self.coinData.set( {
 						"bitcoin": {
-							"name": response.data.coin.name
+							"name": response.data.coin.name,
+							"url": "https://bitcoin.org"
 						}
 					});
 				}
@@ -915,6 +927,15 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 				self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 			}
 		);
+	}
+	else if( currency == 'MSC' )
+	{
+		self.coinData.set( {
+			"MSC": {
+				"name": 'Mastercoin',
+				"url": "http://www.mastercoin.org"
+			}
+		});
 	}
 	else
 	{
