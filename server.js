@@ -4,7 +4,7 @@ var cheerio = require( 'cheerio' );
  
 var app = express();
 var faviconCache = {};
- 
+
 app.configure(function () {
     app.use(express.logger('dev'));     /* 'default', 'short', 'tiny', 'dev' */
     app.use(express.bodyParser());
@@ -17,6 +17,83 @@ app.get( '/addr/:address', function( req, res ) {
 
 app.get( '/', function( req, res ) {
 	res.sendfile( __dirname + '/public/landing.html' );
+});
+
+/* Used to proxy requests to providers who don't 
+	set Access-Control-Allow-Origin.  Note that this actually does the URL 
+	production, so the client can't just make arbitrary requests to arbitrary
+	sites. */
+app.get( '/proxy', function( req, res ) {
+	var service = req.query.service;
+
+	if( service == 'mymastercoins' )
+	{
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		{
+			request.get( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address,
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);
+		}
+		else
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );
+	}
+	else if( service == 'masterchest' )
+	{
+		var currency = req.query.currency;
+		if( currency && currency.match( /[0-9]+/ ))
+		{
+			request.get( 'https://masterchest.info/mastercoin_verify/addresses.aspx?currency=' + currency,
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);			
+		}
+		else
+		{
+			res.json( { 'valid': false, 'error': 'no currency specified.' } );
+		}
+	}
+	else if( service == 'masterchain' )
+	{
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		{
+			request.get( 'https://masterchain.info/addr/' + address + '.json',
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);
+		}
+		else
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
+	}
+	else
+		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
+
 });
 
 // Used to get around sites that don't set Access-Control-Allow-Origin.

@@ -162,6 +162,10 @@ function formatCurrency( currency, value ) {
 			return formatters.SPindivisible( value );
 		}
 	}
+	else
+	{
+		return value + ' ' + currency;
+	}
 }
 
 var addressQRs = null;
@@ -274,7 +278,6 @@ function attachModelListeners( data ) {
 		for( var v in data.changed )
 		{
 			if( data.changed.hasOwnProperty( v ) ){
-				console.log( '** Favicon found for ' + v + ': ' + data.changed[ v ] );
 				$( '.' + v + '-name' ).prepend(
 					$( '<img />' )
 						.attr( 'src', data.changed[ v ] )
@@ -588,21 +591,42 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	queriesMade++;
 	requestor.getJSON( 
 		'Masterchain:balances',
-		'https://masterchain.info/addr/' + originalAddress + '.json',
+		'/proxy',
+		{
+			'service': 'masterchain',
+			'address': originalAddress
+		},
 		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
-				console.log( '** Masterchain result:' );
-				console.log( response );
-/*				if( response.code == 200 )
+				if( response.valid )
 				{
-					self.balances.set( { 
-						'bitcoin': response.data.balance,
-						'bitcoin-source': 'https://btc.blockr.io/address/info/' + originalAddress 
-					});
+					try {
+						var data = JSON.parse( response.data );
+						for( var i=0; i<data.balance.length; i++ )
+						{
+							var item = data.balance[i];
+							if( item.symbol == 'BTC' )
+							{
+								facilitator.nominateValue( 
+									'balance-bitcoin', self.balanceSetter,
+									'https://masterchest.info/',
+									parseFloat( item.value ));
+							}
+							else
+							{
+								facilitator.nominateValue( 
+									'balance-' + item.symbol, self.balanceSetter,
+									'https://masterchest.info/',
+									parseFloat( item.value ));
+							}
+						}
+
+					} catch( e ) {
+						console.error( e );
+					}
 				}
-				*/
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
@@ -669,37 +693,41 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	queriesMade++;
 	requestor.getJSON( 
 		'MyMastercoins:balances',
-		'http://mymastercoins.com/jaddressbalance.aspx?Address=' + originalAddress,
+		'/proxy',
+		{
+			'service': 'mymastercoins',
+			'address': originalAddress
+		},
 		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
-				console.log( 'MyMastercoins Balance Response:' );
-				console.log( response );
-/*				if( response.balance )
+				if( response.valid )
 				{
-					var structure = {};
-					for( var v in response.balance )
-					{
-						var item = response.balance[v];
-						// Ignore bitcoin for now, since we don't have consensus stuff built yet.
-						if( item.symbol == 'BTC' )
+					try {
+						var data = JSON.parse( response.data );
+						for( var i=0; i<data.length; i++ )
 						{
+							var item = data[i];
+							console.log( item );
+							var symbol = null;
+							if( item.currencyid == '1' )
+								symbol = 'MSC';
+							else if( item.currencyid == '2' )
+								symbol = 'TMSC';
+							else
+								symbol = 'SP' + item.currencyid;
+
+							facilitator.nominateValue( 
+								'balance-' + symbol, self.balanceSetter,
+								'https://mymastercoins.com/',
+								parseFloat( item.balance ));
 						}
-						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
-						{
-							structure[ item.symbol ] = item.value / 100000000;
-							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
-						}
-						else
-						{
-							structure[ item.symbol ] = item.value;
-							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
-						}
+
+					} catch( e ) {
+						console.error( e );
 					}
-					self.balances.set( structure );
 				}
-				*/
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
