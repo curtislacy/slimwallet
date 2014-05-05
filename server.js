@@ -25,11 +25,11 @@ app.get( '/', function( req, res ) {
 	sites. */
 app.get( '/proxy', function( req, res ) {
 	var service = req.query.service;
-	var address = req.query.address;
 
-	if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+	if( service == 'mymastercoins' )
 	{
-		if( service == 'mymastercoins' )
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
 		{
 			request.get( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address,
 				function( error, message, response ) {
@@ -45,10 +45,23 @@ app.get( '/proxy', function( req, res ) {
 			);
 		}
 		else
-			res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );
+	}
+	else if( service == 'masterchest' )
+	{
+		var currency = req.query.currency;
+		if( currency && currency.match( /[0-9]+/ ))
+		{
+
+		}
+		else
+		{
+			res.json( { 'valid': false, 'error': 'no currency specified.' } );
+		}
 	}
 	else
-		res.json( { 'valid': false, 'error': 'Malformed Address' } );
+		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
+
 });
 
 // Used to get around sites that don't set Access-Control-Allow-Origin.
