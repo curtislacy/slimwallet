@@ -706,8 +706,23 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				{
 					try {
 						var data = JSON.parse( response.data );
-						console.log( '** MyMastercoins data:' );
-						console.log( data );
+						for( var i=0; i<data.length; i++ )
+						{
+							var item = data[i];
+							console.log( item );
+							var symbol = null;
+							if( item.currencyid == '1' )
+								symbol = 'MSC';
+							else if( item.currencyid == '2' )
+								symbol = 'TMSC';
+							else
+								symbol = 'SP' + item.currencyid;
+
+							facilitator.nominateValue( 
+								'balance-' + symbol, self.balanceSetter,
+								'https://mymastercoins.com/',
+								parseFloat( item.balance ));
+						}
 
 					} catch( e ) {
 						console.error( e );
