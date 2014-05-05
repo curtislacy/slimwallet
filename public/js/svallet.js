@@ -274,7 +274,6 @@ function attachModelListeners( data ) {
 		for( var v in data.changed )
 		{
 			if( data.changed.hasOwnProperty( v ) ){
-				console.log( '** Favicon found for ' + v + ': ' + data.changed[ v ] );
 				$( '.' + v + '-name' ).prepend(
 					$( '<img />' )
 						.attr( 'src', data.changed[ v ] )
@@ -669,13 +668,21 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	queriesMade++;
 	requestor.getJSON( 
 		'MyMastercoins:balances',
-		'http://mymastercoins.com/jaddressbalance.aspx?Address=' + originalAddress,
+		'/proxy',
+		{
+			'service': 'mymastercoins',
+			'address': originalAddress
+		},
 		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
-				console.log( 'MyMastercoins Balance Response:' );
-				console.log( response );
+				if( response.valid )
+				{
+					var data = JSON.parse( response.data );
+					console.log( '** MyMastercoins data:' );
+					console.log( data );
+				}
 /*				if( response.balance )
 				{
 					var structure = {};

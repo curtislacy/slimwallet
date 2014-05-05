@@ -4,7 +4,7 @@ var cheerio = require( 'cheerio' );
  
 var app = express();
 var faviconCache = {};
- 
+
 app.configure(function () {
     app.use(express.logger('dev'));     /* 'default', 'short', 'tiny', 'dev' */
     app.use(express.bodyParser());
@@ -17,6 +17,38 @@ app.get( '/addr/:address', function( req, res ) {
 
 app.get( '/', function( req, res ) {
 	res.sendfile( __dirname + '/public/landing.html' );
+});
+
+/* Used to proxy requests to providers who don't 
+	set Access-Control-Allow-Origin.  Note that this actually does the URL 
+	production, so the client can't just make arbitrary requests to arbitrary
+	sites. */
+app.get( '/proxy', function( req, res ) {
+	var service = req.query.service;
+	var address = req.query.address;
+
+	if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+	{
+		if( service == 'mymastercoins' )
+		{
+			request.get( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address,
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);
+		}
+		else
+			res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
+	}
+	else
+		res.json( { 'valid': false, 'error': 'Malformed Address' } );
 });
 
 // Used to get around sites that don't set Access-Control-Allow-Origin.
