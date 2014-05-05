@@ -52,12 +52,44 @@ app.get( '/proxy', function( req, res ) {
 		var currency = req.query.currency;
 		if( currency && currency.match( /[0-9]+/ ))
 		{
-
+			request.get( 'https://masterchest.info/mastercoin_verify/addresses.aspx?currency=' + currency,
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);			
 		}
 		else
 		{
 			res.json( { 'valid': false, 'error': 'no currency specified.' } );
 		}
+	}
+	else if( service == 'masterchain' )
+	{
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		{
+			request.get( 'https://masterchain.info/addr/' + address + '.json',
+				function( error, message, response ) {
+					if( error )
+					{
+						res.json( { 'valid': false, 'error': error.toString() } );
+					}
+					else
+					{
+						res.send( { 'valid': true, 'data': response } );
+					}
+				}
+			);
+		}
+		else
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
 	}
 	else
 		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		

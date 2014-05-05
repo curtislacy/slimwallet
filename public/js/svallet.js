@@ -587,21 +587,26 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	queriesMade++;
 	requestor.getJSON( 
 		'Masterchain:balances',
-		'https://masterchain.info/addr/' + originalAddress + '.json',
+		'/proxy',
+		{
+			'service': 'masterchain',
+			'address': originalAddress
+		},
 		function( response ) {
 			queriesComplete++;
 			if( originalAddress == self.addressModel.get( 'address' ))
 			{
-				console.log( '** Masterchain result:' );
-				console.log( response );
-/*				if( response.code == 200 )
+				if( response.valid )
 				{
-					self.balances.set( { 
-						'bitcoin': response.data.balance,
-						'bitcoin-source': 'https://btc.blockr.io/address/info/' + originalAddress 
-					});
+					try {
+						var data = JSON.parse( response.data );
+						console.log( '** Masterchain data:' );
+						console.log( data );
+
+					} catch( e ) {
+						console.error( e );
+					}
 				}
-				*/
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
@@ -688,30 +693,6 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						console.error( e );
 					}
 				}
-/*				if( response.balance )
-				{
-					var structure = {};
-					for( var v in response.balance )
-					{
-						var item = response.balance[v];
-						// Ignore bitcoin for now, since we don't have consensus stuff built yet.
-						if( item.symbol == 'BTC' )
-						{
-						}
-						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
-						{
-							structure[ item.symbol ] = item.value / 100000000;
-							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
-						}
-						else
-						{
-							structure[ item.symbol ] = item.value;
-							structure[ item.symbol + '-source' ] = 'https://test.omniwallet.org/'
-						}
-					}
-					self.balances.set( structure );
-				}
-				*/
 				if( queriesComplete == queriesMade )
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
 
