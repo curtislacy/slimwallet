@@ -31,62 +31,27 @@ app.get( '/proxy', function( req, res ) {
 		var address = req.query.address;
 		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
 		{
-			request.get( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address,
-				function( error, message, response ) {
-					if( error )
-					{
-						res.json( { 'valid': false, 'error': error.toString() } );
-					}
-					else
-					{
-						res.send( { 'valid': true, 'data': response } );
-					}
-				}
-			);
+			proxyGet( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address, res );
 		}
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );
 	}
 	else if( service == 'masterchest' )
 	{
-		var currency = req.query.currency;
-		if( currency && currency.match( /[0-9]+/ ))
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
 		{
-			request.get( 'https://masterchest.info/mastercoin_verify/addresses.aspx?currency=' + currency,
-				function( error, message, response ) {
-					if( error )
-					{
-						res.json( { 'valid': false, 'error': error.toString() } );
-					}
-					else
-					{
-						res.send( { 'valid': true, 'data': response } );
-					}
-				}
-			);			
+			proxyGet( 'https://www.masterchest.info/mastercoin_verify/adamtest.aspx?address=' + address, res );
 		}
 		else
-		{
-			res.json( { 'valid': false, 'error': 'no currency specified.' } );
-		}
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
 	}
 	else if( service == 'masterchain' )
 	{
 		var address = req.query.address;
 		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
 		{
-			request.get( 'https://masterchain.info/addr/' + address + '.json',
-				function( error, message, response ) {
-					if( error )
-					{
-						res.json( { 'valid': false, 'error': error.toString() } );
-					}
-					else
-					{
-						res.send( { 'valid': true, 'data': response } );
-					}
-				}
-			);
+			proxyGet( 'https://masterchain.info/addr/' + address + '.json', res );
 		}
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
@@ -95,6 +60,21 @@ app.get( '/proxy', function( req, res ) {
 		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
 
 });
+function proxyGet( url, res ) {
+	request.get( url,
+		function( error, message, response ) {
+			if( error )
+			{
+				res.json( { 'valid': false, 'error': error.toString() } );
+			}
+			else
+			{
+				res.send( { 'valid': true, 'data': response } );
+			}
+		}
+	);
+
+}
 
 // Used to get around sites that don't set Access-Control-Allow-Origin.
 app.get( '/findfavicon', function( req, res ) {

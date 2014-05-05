@@ -739,6 +739,51 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
 		});
 
+	queriesMade++;
+	requestor.getJSON( 
+		'Masterchest:balances',
+		'/proxy',
+		{
+			'service': 'masterchest',
+			'address': originalAddress
+		},
+		function( response ) {
+			queriesComplete++;
+			if( originalAddress == self.addressModel.get( 'address' ))
+			{
+				if( response.valid )
+				{
+					try {
+						var data = JSON.parse( response.data );
+
+						console.log( 'Got masterchest data:' );
+						console.log( data );
+						for( var i=0; i<data.balance.length; i++ )
+						{
+							var item = data.balance[i];
+							console.log( item );
+
+							facilitator.nominateValue( 
+								'balance-' + item.symbol, self.balanceSetter,
+								'https://masterchest.info/',
+								item.value );
+						}
+
+					} catch( e ) {
+						console.error( e );
+					}
+				}
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
+
+			}
+		},
+		function() {
+			queriesComplete++;
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+		});
+
 	
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
 	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
