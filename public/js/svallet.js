@@ -90,7 +90,9 @@ var requestor = new Requestor( svalletData.networkStatus );
 // Not a real median, this picks the lower of the two middle values if the array is even in length
 function getPseudoMedian(values) {
     values.sort( function(a,b) {return a - b;} );
+
     var half = Math.floor(values.length/2);
+
     return values[half];
 }
 function ConsensusFacilitator() {
@@ -709,7 +711,6 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						for( var i=0; i<data.length; i++ )
 						{
 							var item = data[i];
-							console.log( item );
 							var symbol = null;
 							if( item.currencyid == '1' )
 								symbol = 'MSC';
@@ -756,12 +757,9 @@ BalanceQueryWorker.prototype.getBalances = function() {
 					try {
 						var data = JSON.parse( response.data );
 
-						console.log( 'Got masterchest data:' );
-						console.log( data );
 						for( var i=0; i<data.balance.length; i++ )
 						{
 							var item = data.balance[i];
-							console.log( item );
 
 							facilitator.nominateValue( 
 								'balance-' + item.symbol, self.balanceSetter,
