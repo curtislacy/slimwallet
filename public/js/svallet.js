@@ -162,6 +162,10 @@ function formatCurrency( currency, value ) {
 			return formatters.SPindivisible( value );
 		}
 	}
+	else
+	{
+		return value + ' ' + currency;
+	}
 }
 
 var addressQRs = null;
@@ -600,8 +604,24 @@ BalanceQueryWorker.prototype.getBalances = function() {
 				{
 					try {
 						var data = JSON.parse( response.data );
-						console.log( '** Masterchain data:' );
-						console.log( data );
+						for( var i=0; i<data.balance.length; i++ )
+						{
+							var item = data.balance[i];
+							if( item.symbol == 'BTC' )
+							{
+								facilitator.nominateValue( 
+									'balance-bitcoin', self.balanceSetter,
+									'https://masterchest.info/',
+									parseFloat( item.value ));
+							}
+							else
+							{
+								facilitator.nominateValue( 
+									'balance-' + item.symbol, self.balanceSetter,
+									'https://masterchest.info/',
+									parseFloat( item.value ));
+							}
+						}
 
 					} catch( e ) {
 						console.error( e );
