@@ -679,9 +679,14 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			{
 				if( response.valid )
 				{
-					var data = JSON.parse( response.data );
-					console.log( '** MyMastercoins data:' );
-					console.log( data );
+					try {
+						var data = JSON.parse( response.data );
+						console.log( '** MyMastercoins data:' );
+						console.log( data );
+
+					} catch( e ) {
+						console.error( e );
+					}
 				}
 /*				if( response.balance )
 				{
