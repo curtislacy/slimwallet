@@ -1128,6 +1128,15 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 			}
 		});
 	}
+	else if( currency == 'XCP' )
+	{
+		self.coinData.set( {
+			"XCP": {
+				"name": 'Counterparty',
+				"url": 'https://www.counterparty.co/'
+			}
+		});
+	}
 	else
 	{
 		var match = currency.match( /SP([0-9]+)/ )
