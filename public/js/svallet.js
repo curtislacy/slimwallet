@@ -745,7 +745,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		'blockscan:balances',
 		'/proxy',
 		{
-			'service': 'blockscan',
+			'service': 'blockscan-balances',
 			'address': originalAddress
 		},
 		function( response ) {
@@ -982,6 +982,38 @@ ValueQueryWorker.prototype.getValues = function() {
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
+	}
+	else if( this.currency == 'XCP' )
+	{
+		requestor.getJSON( 
+			'blockscan:value-xcp',
+			'/proxy',
+			{
+				'service': 'blockscan-value'
+			},
+			function( response ) {
+				console.log( response );
+				if( response.valid )
+				{
+					var data = JSON.parse( response.data );
+					console.log( data );
+					var xcpToBtc = parseFloat( data.result );
+					if( self.values.get( 'bitcoin' ))
+					{
+						console.log( 'Bitcoin value: ' + self.values.get( 'bitcoin' ));
+						var xcpToUsd = xcpToBtc * self.values.get( 'bitcoin' );
+						console.log( '** XCP per USD: ' + xcpToUsd );
+						self.values.set( {
+							'XCP': xcpToUsd,
+							'XCP-source': 'http://blockscan.com/'
+						});
+					}
+				}
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			},
+			function() {
+				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+			});
 	}
 	else if( this.currency == 'SP3' )
 	{

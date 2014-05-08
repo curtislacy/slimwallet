@@ -56,7 +56,7 @@ app.get( '/proxy', function( req, res ) {
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
 	}
-	else if( service == 'blockscan' )
+	else if( service == 'blockscan-balances' )
 	{
 		var address = req.query.address;
 		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
@@ -65,6 +65,10 @@ app.get( '/proxy', function( req, res ) {
 		}
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
+	}
+	else if( service == 'blockscan-value' )
+	{
+		proxyGet( 'http://blockscan.com/api2.aspx?module=price&asset1=BTC&asset2=XCP', res );
 	}
 	else
 		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
