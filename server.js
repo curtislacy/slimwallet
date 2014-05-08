@@ -56,6 +56,16 @@ app.get( '/proxy', function( req, res ) {
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
 	}
+	else if( service == 'blockscan' )
+	{
+		var address = req.query.address;
+		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		{
+			proxyGet( 'http://blockscan.com/api2.aspx?module=balance&address=' + address, res );
+		}
+		else
+			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
+	}
 	else
 		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
 
@@ -135,7 +145,7 @@ app.get( '/findfavicon', function( req, res ) {
 })
 
 
-var port = Number( process.env.PORT || 3000 );
+var port = Number( process.env.PORT || 4000 );
 app.listen( port, function() {
 	console.log('Listening on port ' + port + '...');	
 });

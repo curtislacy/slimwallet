@@ -742,6 +742,48 @@ BalanceQueryWorker.prototype.getBalances = function() {
 
 	queriesMade++;
 	requestor.getJSON( 
+		'blockscan:balances',
+		'/proxy',
+		{
+			'service': 'blockscan',
+			'address': originalAddress
+		},
+		function( response ) {
+			queriesComplete++;
+			if( originalAddress == self.addressModel.get( 'address' ))
+			{
+				if( response.valid )
+				{
+					try {
+						var data = JSON.parse( response.data );
+						for( var i=0; i<data.data.length; i++ )
+						{
+							var item = data.data[i];
+							var symbol = null;
+
+							facilitator.nominateValue( 
+								'balance-' + item.asset, self.balanceSetter,
+								'http://blockscan.com//',
+								parseFloat( item.balance ));
+						}
+
+					} catch( e ) {
+						console.error( e );
+					}
+				}
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );
+
+			}
+		},
+		function() {
+			queriesComplete++;
+				if( queriesComplete == queriesMade )
+					self.loop = setTimeout( self.getBalances.bind( self ), 30000 );			
+		});
+
+	queriesMade++;
+	requestor.getJSON( 
 		'Masterchest:balances',
 		'/proxy',
 		{
