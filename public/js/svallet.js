@@ -151,7 +151,7 @@ var formatters = {
 function formatCurrency( currency, value ) {
 	if( formatters[ currency ])
 		return formatters[ currency ]( value );
-	else if( currency.match( /SP[0-9]+/ ))
+	else if( currency.match( /^MSC-SP[0-9]+$/ ))
 	{
 		var propertyData = svalletData.coinData.get( currency );
 
@@ -166,7 +166,11 @@ function formatCurrency( currency, value ) {
 	}
 	else
 	{
-		return value + ' ' + currency;
+		var xcpMatch = currency.match( /^XCP-([A-Za-z0-9]+)$/ )
+		if( xcpMatch )
+			return value + ' ' + xcpMatch[1];
+		else
+			return value + ' ' + currency;
 	}
 }
 
