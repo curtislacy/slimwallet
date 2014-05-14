@@ -1181,7 +1181,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	}
 	else
 	{
-		var match = currency.match( /MSC-SP([0-9]+)/ )
+		var match = currency.match( /^MSC-SP([0-9]+)$/ )
 		if( match )
 		{
 			requestor.getJSON( 
@@ -1213,6 +1213,18 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 					self.loops[ currency ] = setTimeout( self.getCoinData.bind( outerThis ), 30000 );
 				}
 			);
+		}
+		else
+		{
+			match = currency.match( /^XCP-([A-Za-z0-9]+)$/ )
+			if( match )
+			{
+				var dataToSet = {};
+				dataToSet[ currency ] = {
+					"name": match[ 1 ]
+				};
+				self.coinData.set( dataToSet );
+			}
 		}		
 	}
 
