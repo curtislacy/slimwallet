@@ -674,7 +674,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						else
 						{
 							facilitator.nominateValue( 
-								'balance-' + item.symbol, self.balanceSetter,
+								'balance-MSC-' + item.symbol, self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value );
 						}
@@ -717,7 +717,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 							else if( item.currencyid == '2' )
 								symbol = 'TMSC';
 							else
-								symbol = 'SP' + item.currencyid;
+								symbol = 'MSC-SP' + item.currencyid;
 
 							facilitator.nominateValue( 
 								'balance-' + symbol, self.balanceSetter,
@@ -759,10 +759,11 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						for( var i=0; i<data.data.length; i++ )
 						{
 							var item = data.data[i];
-							var symbol = null;
+							var symbol = ( item.asset == 'XCP' ) ?
+											item.asset : 'XCP-' + item.asset;
 
 							facilitator.nominateValue( 
-								'balance-' + item.asset, self.balanceSetter,
+								'balance-' + symbol, self.balanceSetter,
 								'http://blockscan.com//',
 								parseFloat( item.balance ));
 						}
@@ -802,9 +803,11 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						for( var i=0; i<data.balance.length; i++ )
 						{
 							var item = data.balance[i];
+							var symbol = ( item.symbol == 'MSC' || item.symbol == 'TMSC' ) ?
+										item.symbol : 'MSC-' + item.symbol;
 
 							facilitator.nominateValue( 
-								'balance-' + item.symbol, self.balanceSetter,
+								'balance-' + symbol, self.balanceSetter,
 								'https://masterchest.info/',
 								item.value );
 						}
@@ -1015,10 +1018,10 @@ ValueQueryWorker.prototype.getValues = function() {
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			});
 	}
-	else if( this.currency == 'SP3' )
+	else if( this.currency == 'MSC-SP3' )
 	{
 		requestor.getJSON( 
-			'MasterXchange:value-sp3',
+			'MasterXchange:value-msc-sp3',
 			'https://masterxchange.com/api/v2/trades.php?currency=maid',
 			function( response ) {
 				var totalCoins = 0;
@@ -1038,14 +1041,14 @@ ValueQueryWorker.prototype.getValues = function() {
 					{
 						var maidToUsd = averageValue * self.values.get( 'bitcoin' );
 						self.values.set( {
-							'SP3': maidToUsd,
-							'SP3-source': 'https://masterxchange.com/'
+							'MSC-SP3': maidToUsd,
+							'MSC-SP3-source': 'https://masterxchange.com/'
 						});
 					}					
 				}
 				else
 				{
-					self.values.unset( 'SP3' );
+					self.values.unset( 'MSC-SP3' );
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			},
@@ -1139,7 +1142,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	}
 	else
 	{
-		var match = currency.match( /SP([0-9]+)/ )
+		var match = currency.match( /MSC-SP([0-9]+)/ )
 		if( match )
 		{
 			requestor.getJSON( 
