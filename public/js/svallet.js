@@ -995,7 +995,6 @@ ValueQueryWorker.prototype.getValues = function() {
 				'service': 'blockscan-value'
 			},
 			function( response ) {
-				console.log( response );
 				if( response.valid )
 				{
 					var data = JSON.parse( response.data );
@@ -1003,9 +1002,7 @@ ValueQueryWorker.prototype.getValues = function() {
 					var xcpToBtc = parseFloat( data.result );
 					if( self.values.get( 'bitcoin' ))
 					{
-						console.log( 'Bitcoin value: ' + self.values.get( 'bitcoin' ));
 						var xcpToUsd = xcpToBtc * self.values.get( 'bitcoin' );
-						console.log( '** XCP per USD: ' + xcpToUsd );
 						self.values.set( {
 							'XCP': xcpToUsd,
 							'XCP-source': 'http://blockscan.com/'
@@ -1056,6 +1053,48 @@ ValueQueryWorker.prototype.getValues = function() {
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
 			}
 		);
+	}
+	else
+	{
+		var currency = this.currency;
+		var poloniexDtt = this.currency.match( /^XCP-([A-Za-z0-9]+)DTT$/ );
+		if( poloniexDtt )
+		{
+			console.log( '***  XCP Derived: ' + poloniexDtt[1] );
+			requestor.getJSON( 
+				'poloniex:value-' + poloniexDtt[1],
+				'/proxy',
+				{
+					'service': 'poloniex-value',
+					'currency': poloniexDtt[1]
+				},
+				function( response ) {
+					if( response.valid )
+					{
+						var data = JSON.parse( response.data );
+						var totalAmount = 0;
+						var totalCost = 0;
+						for( var i=0; i<data.length; i++ )
+						{
+							totalAmount += parseFloat( data[i].amount );
+							totalCost += parseFloat( data[i].total );
+						}
+						var tokenToBtc = ( totalCost / totalAmount );
+						if( self.values.get( 'bitcoin' ))
+						{
+							var tokenToUsd = tokenToBtc * self.values.get( 'bitcoin' );
+							var valuesToSet = {};
+							valuesToSet[ currency ] = tokenToUsd;
+							valuesToSet[ currency + '-source' ] = 'https://poloniex.com/';
+							self.values.set( valuesToSet );
+						}
+					}
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				},
+				function() {
+					self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
+				});
+		}
 	}
 }
 

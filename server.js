@@ -29,7 +29,7 @@ app.get( '/proxy', function( req, res ) {
 	if( service == 'mymastercoins' )
 	{
 		var address = req.query.address;
-		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
 		{
 			proxyGet( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address, res );
 		}
@@ -39,7 +39,7 @@ app.get( '/proxy', function( req, res ) {
 	else if( service == 'masterchest' )
 	{
 		var address = req.query.address;
-		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
 		{
 			proxyGet( 'https://www.masterchest.info/mastercoin_verify/adamtest.aspx?address=' + address, res );
 		}
@@ -49,7 +49,7 @@ app.get( '/proxy', function( req, res ) {
 	else if( service == 'masterchain' )
 	{
 		var address = req.query.address;
-		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
 		{
 			proxyGet( 'https://masterchain.info/addr/' + address + '.json', res );
 		}
@@ -59,7 +59,7 @@ app.get( '/proxy', function( req, res ) {
 	else if( service == 'blockscan-balances' )
 	{
 		var address = req.query.address;
-		if( address.match( /[13][A-Za-z0-9]{26,33}/ ))
+		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
 		{
 			proxyGet( 'http://blockscan.com/api2.aspx?module=balance&address=' + address, res );
 		}
@@ -69,6 +69,16 @@ app.get( '/proxy', function( req, res ) {
 	else if( service == 'blockscan-value' )
 	{
 		proxyGet( 'http://blockscan.com/api2.aspx?module=price&asset1=BTC&asset2=XCP', res );
+	}
+	else if( service == 'poloniex-value' )
+	{
+		var currency = req.query.currency;
+		if( currency.match( /^[A-Za-z0-9]+$/))
+			proxyGet( 'https://poloniex.com/public?command=returnTradeHistory&currencyPair=BTC_' + currency, res );
+		else
+		{
+			res.json( { 'valid': false, 'error': 'Invalid Currency.' });
+		}
 	}
 	else
 		res.json( { 'valid': false, 'error': 'Invalid Service.' } );		
