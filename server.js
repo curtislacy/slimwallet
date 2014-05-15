@@ -66,10 +66,6 @@ app.get( '/proxy', function( req, res ) {
 		else
 			res.json( { 'valid': false, 'error': 'Malformed Address' } );		
 	}
-	else if( service == 'blockscan-value' )
-	{
-		proxyGet( 'http://blockscan.com/api2.aspx?module=price&asset1=BTC&asset2=XCP', res );
-	}
 	else if( service == 'poloniex-value' )
 	{
 		var currency = req.query.currency;

@@ -993,24 +993,32 @@ ValueQueryWorker.prototype.getValues = function() {
 	else if( this.currency == 'XCP' )
 	{
 		requestor.getJSON( 
-			'blockscan:value-xcp',
+			'poloniex:value-xcp',
 			'/proxy',
 			{
-				'service': 'blockscan-value'
-			},
+					'service': 'poloniex-value',
+					'currency': 'XCP'
+				},
 			function( response ) {
 				if( response.valid )
 				{
 					var data = JSON.parse( response.data );
-					console.log( data );
-					var xcpToBtc = parseFloat( data.result );
+					var totalAmount = 0;
+					var totalCost = 0;
+					for( var i=0; i<data.length; i++ )
+					{
+						totalAmount += parseFloat( data[i].amount );
+						totalCost += parseFloat( data[i].total );
+					}
+					var tokenToBtc = ( totalCost / totalAmount );
 					if( self.values.get( 'bitcoin' ))
 					{
-						var xcpToUsd = xcpToBtc * self.values.get( 'bitcoin' );
-						self.values.set( {
-							'XCP': xcpToUsd,
-							'XCP-source': 'http://blockscan.com/'
-						});
+						var tokenToUsd = tokenToBtc * self.values.get( 'bitcoin' );
+						var valuesToSet = {
+							'XCP': tokenToUsd,
+							'XCP-source': 'https://poloniex.com/'
+						};
+						self.values.set( valuesToSet );
 					}
 				}
 				self.loops[ currency ] = setTimeout( self.getValues.bind( outerThis ), 30000 );
@@ -1064,7 +1072,6 @@ ValueQueryWorker.prototype.getValues = function() {
 		var poloniexDtt = this.currency.match( /^XCP-([A-Za-z0-9]+)DTT$/ );
 		if( poloniexDtt )
 		{
-			console.log( '***  XCP Derived: ' + poloniexDtt[1] );
 			requestor.getJSON( 
 				'poloniex:value-' + poloniexDtt[1],
 				'/proxy',
