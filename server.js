@@ -126,7 +126,7 @@ app.get( '/findfavicon', function( req, res ) {
 						var $ = cheerio.load( response );
 						var found = false;
 						$( 'link' ).each( function( element ) {
-							if( !found && this.attribs.rel == 'shortcut icon' )
+							if( !found && this.attribs.rel.indexOf( 'icon' ) >= 0 )
 							{
 								found = true;
 								var iconUrl = this.attribs.href;
