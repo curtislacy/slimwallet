@@ -26,17 +26,7 @@ app.get( '/', function( req, res ) {
 app.get( '/proxy', function( req, res ) {
 	var service = req.query.service;
 
-	if( service == 'mymastercoins' )
-	{
-		var address = req.query.address;
-		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
-		{
-			proxyGet( 'http://mymastercoins.com/jaddressbalance.aspx?Address=' + address, res );
-		}
-		else
-			res.json( { 'valid': false, 'error': 'Malformed Address' } );
-	}
-	else if( service == 'masterchest' )
+	if( service == 'masterchest' )
 	{
 		var address = req.query.address;
 		if( address.match( /^[13][A-Za-z0-9]{26,33}$/ ))
