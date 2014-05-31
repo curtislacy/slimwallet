@@ -1,42 +1,88 @@
-var AddressData = Backbone.Model.extend( {
-	// address: the bitcoin address we're viewing.
-});
-var BalanceData = Backbone.Model.extend( {
-	// Map currency ID to balance.
-	// Map "currencyID-source" to source of the data.
-});
-var ValueData = Backbone.Model.extend( {
-	// Map currencyID to value.
-	// Map "currencyID-source" to source of the data.
-});
-var CoinData = Backbone.Model.extend( {
-	/* Map currencyID to coin description data:
-	{
-		"name": "Mastercoin",
-		"description": "SAFE Network Crowdsale (MSAFE)",
-		"divisible": true
+/****
+ *   A "Single Address Svallet" - all the data querying and such for a single address.
+ ****/
+function SingleAddressSvallet() {
+	var AddressData = Backbone.Model.extend( {
+		// address: the bitcoin address we're viewing.
+	});
+	var BalanceData = Backbone.Model.extend( {
+		// Map currency ID to balance.
+		// Map "currencyID-source" to source of the data.
+	});
+	var ValueData = Backbone.Model.extend( {
+		// Map currencyID to value.
+		// Map "currencyID-source" to source of the data.
+	});
+	var CoinData = Backbone.Model.extend( {
+		/* Map currencyID to coin description data:
+		{
+			"name": "Mastercoin",
+			"description": "SAFE Network Crowdsale (MSAFE)",
+			"divisible": true
+		}
+		
+		Map "currencyID-source" to source of the data. */
+	});
+	var CoinIcons = Backbone.Model.extend( {
+		/* Map currencyID to a favicon provided by the currency issuer. */
+	});
+	var NetworkStatus = Backbone.Model.extend( {
+		/* Map request ID (test.omniwallet.org:balance, etc.) 
+			to one of 'OK', 'In Progress', or FAILED */
+	});
+
+	this.svalletData = {
+		"addressData": new AddressData(),
+		"balances": new BalanceData(),
+		"values": new ValueData(),
+		"coinData": new CoinData(),
+		"networkStatus": new NetworkStatus(),
+		"coinIcons": new CoinIcons()
 	}
-	
-	Map "currencyID-source" to source of the data. */
-});
-var CoinIcons = Backbone.Model.extend( {
-	/* Map currencyID to a favicon provided by the currency issuer. */
-});
-var NetworkStatus = Backbone.Model.extend( {
-	/* Map request ID (test.omniwallet.org:balance, etc.) 
-		to one of 'OK', 'In Progress', or FAILED */
-});
+	this.workers = {};
 
-var svalletData = {
-	"addressData": new AddressData(),
-	"balances": new BalanceData(),
-	"values": new ValueData(),
-	"coinData": new CoinData(),
-	"networkStatus": new NetworkStatus(),
-	"coinIcons": new CoinIcons()
+	this.requestor = new Requestor( this.svalletData.networkStatus );
+	this.facilitator = new ConsensusFacilitator();
+
+	this.workers[ 'balanceQuery' ] = new BalanceQueryWorker( this );
+	this.workers[ 'valueQuery' ] = new ValueQueryWorker( this );
+	this.workers[ 'coinDataQuery' ] = new CoinDataQueryWorker( this );
+
+	var self = this;
+	this.svalletData.coinData.on( 'change', function( data ) {
+		for( var v in data.changed )
+			if( data.changed.hasOwnProperty( v ))
+			{
+				if( v.indexOf( '-source' ) != v.length -7 )
+				{
+					if( data.changed[ v ].url )
+						self.locateIcon( v, data.changed[ v ].url );
+				}
+			}
+	});
 }
-var workers = {};
+SingleAddressSvallet.prototype.locateIcon = function( currency, url )
+{
+	var host = url.match( /https?:\/\/([a-zA-Z.]+)/ )[1];
+	var self = this;
+	this.requestor.getJSON( 
+		host + ':icon',
+		'/findfavicon', { 'url': url }, 
+		function( response ) {
+			if( response.valid )
+			{
+				var toSet = {};
+				toSet[ currency ] = response.url;
+				self.svalletData.coinIcons.set( toSet );
+			}
+			else
+				console.error( 'No favicon available for ' + url, response );
+		}, function( error ){} );
+}
 
+/****
+ * The requestor - this gets data from a remote source.
+ ****/
 function Requestor( data ){
 	this.data = data;
 }
@@ -86,17 +132,19 @@ Requestor.prototype.post = function( id, url, data, success, failure ) {
 	});
 }
 
-var requestor = new Requestor( svalletData.networkStatus );
+/******
+ *   The consensus facilitator - manages getting values from multiple sources, and picking the best one.
+ ******/
+function ConsensusFacilitator() {
+	this.values = {};
+}
 // Not a real median, this picks the lower of the two middle values if the array is even in length
-function getPseudoMedian(values) {
+ConsensusFacilitator.prototype.getPseudoMedian = function( values ) {
     values.sort( function(a,b) {return a - b;} );
 
     var half = Math.floor(values.length/2);
 
-    return values[half];
-}
-function ConsensusFacilitator() {
-	this.values = {};
+    return values[half];	
 }
 ConsensusFacilitator.prototype.nominateValue = function( valueKey, setter, source, value ) {
 	if( !this.values.hasOwnProperty( valueKey ) ){
@@ -129,388 +177,19 @@ ConsensusFacilitator.prototype.nominateValue = function( valueKey, setter, sourc
 	}
 	else
 	{
-		var median = getPseudoMedian( allValues );
+		var median = this.getPseudoMedian( allValues );
 		setter( valueKey, valueLookup[ median ], median );
 	}
 }
 
-var facilitator = new ConsensusFacilitator();
+/****
+ * BalanceQuery Worker: Actually recovers balances asynchronously.
+ ****/
+function BalanceQueryWorker( svallet ) {
+	this.requestor = svallet.requestor;
+	this.facilitator = svallet.facilitator;
+	var data = svallet.svalletData;
 
-var formatters = {
-	USD: function( value ){ return '$' + value.toFixed( 2 ) },
-	bitcoin: function( value ) { return ( value ).toFixed( 8 ) + ' BTC' },
-	MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
-	TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
-	SPdivisible: function( value ) {
-		return ( value / 100000000 ).toFixed( 8 );
-	},
-	SPindivisible: function( value ) {
-		return value.toFixed( 0 );
-	}
-}
-function formatCurrency( currency, value ) {
-	if( formatters[ currency ])
-		return formatters[ currency ]( value );
-	else if( currency.match( /^MSC-SP[0-9]+$/ ))
-	{
-		var propertyData = svalletData.coinData.get( currency );
-
-		if( propertyData && propertyData.divisible )
-		{
-			return formatters.SPdivisible( value );
-		}
-		else
-		{
-			return formatters.SPindivisible( value );
-		}
-	}
-	else
-	{
-		var xcpMatch = currency.match( /^XCP-([A-Za-z0-9]+)$/ )
-		if( xcpMatch )
-			return value + ' ' + xcpMatch[1];
-		else
-			return value + ' ' + currency;
-	}
-}
-
-var addressQRs = null;
-
-$( function() {
-	var elements = document.getElementsByClassName( "address-qr" );
-	if( elements.length > 0 )
-	{
-		for( var i=0; i<elements.length; i++ )
-		{
-			if( !addressQRs )
-				addressQRs = [];
-			addressQRs.push( new QRCode( elements[i], {
-				width: 192, height: 192
-			} ));
-		}
-	}
-
-	attachModelSetters( svalletData );
-	attachModelListeners( svalletData );
-
-	initModelData( svalletData );
-
-	// This HAS to happen after the rest of the UI syncs up, since address changes
-	// after this point will redirect the browser.
-	svalletData.addressData.on( 'change:address', function( data ) {
-		window.location.href = '/addr/' + data.changed.address;
-	});
-
-});
-
-// Attach listeners to UI components that set data in the model.
-// DO NOT CHANGE ANY UI COMPONENT VALUES HERE!
-function attachModelSetters( data ) {
-	$( '#address-search' ).submit(function(e) {
-		e.preventDefault();
-		data.addressData.set( { address: $( '#address-search input' ).val() });
-	});
-
-	workers[ 'balanceQuery' ] = new BalanceQueryWorker( data );
-	workers[ 'valueQuery' ] = new ValueQueryWorker( data );
-	workers[ 'coinDataQuery' ] = new CoinDataQueryWorker( data );
-};
-
-// Attach listeners to the data model that populate the UI based on its data.
-// DO NO READ FROM ANY UI COMPONENTS HERE!
-function attachModelListeners( data ) {
-
-	// Update the display of the currently viewed address in the UI.
-	data.addressData.on( 'change:address', function( data ) {
-		$( '#address-search input' ).attr( 'placeholder', data.changed.address );
-		$( '.address-display' ).text( data.changed.address );
-		window.document.title = 'Svallet - ' + data.changed.address;
-		if( addressQRs )
-		{
-			addressQRs.forEach( function( qr ) {
-				qr.clear();
-				qr.makeCode( data.changed.address );
-			});
-		}
-	} );
-
-	data.balances.on( 'change', updateTotalSum );
-	data.values.on( 'change', updateTotalSum );
-
-	data.balances.on( 'change', function( data ) {
-		for( var v in data.changed )
-			if( data.changed.hasOwnProperty( v ))
-			{
-				if( v.indexOf( '-source' ) != v.length - 7 )
-					updateBalanceTable( v );
-			}
-	} );
-
-	data.values.on( 'change', function( data ) {
-		for( var v in data.changed )
-			if( data.changed.hasOwnProperty( v ))
-			{
-				if( v.indexOf( '-source' ) != v.length - 7 )
-					updateValues( v );
-			}
-	});
-
-
-	data.coinData.on( 'change', function( data ) {
-		for( var v in data.changed )
-			if( data.changed.hasOwnProperty( v ))
-			{
-				if( v.indexOf( '-source' ) != v.length -7 )
-				{
-					updateCoinData( v );
-					updateBalanceTable( v );
-					if( data.changed[ v ].url )
-						locateIcon( v, data.changed[ v ].url );
-				}
-			}
-	});
-
-	data.networkStatus.on( 'change', function( data ) {
-		for( var v in data.changed )
-		{
-			if( data.changed.hasOwnProperty( v ))
-				updateNetworkStatus( 'inprogress', 'In Progress', v, data.changed[v] );
-				updateNetworkStatus( 'successful', 'OK', v, data.changed[v] );
-				updateNetworkStatus( 'failed', 'FAILED', v, data.changed[v] );
-		}
-	});
-
-	data.coinIcons.on( 'change', function( data ) {
-		for( var v in data.changed )
-		{
-			if( data.changed.hasOwnProperty( v ) ){
-				$( '.' + v + '-name' ).prepend(
-					$( '<img />' )
-						.attr( 'src', data.changed[ v ] )
-						.attr( 'id', v + '-icon' )
-						.attr( 'class', 'currency-icon' )
-				);
-			};
-		}
-	});
-};
-
-function locateIcon( currency, url )
-{
-	var host = url.match( /https?:\/\/([a-zA-Z.]+)/ )[1];
-
-	requestor.getJSON( 
-		host + ':icon',
-		'/findfavicon', { 'url': url }, 
-		function( response ) {
-			if( response.valid )
-			{
-				var toSet = {};
-				toSet[ currency ] = response.url;
-				svalletData.coinIcons.set( toSet );
-			}
-			else
-				console.error( 'No favicon available for ' + url, response );
-		}, function( error ){} );
-}
-
-String.prototype.replaceAll = function(search, replace)
-{
-    //if replace is null, return original string otherwise it will
-    //replace search string with 'undefined'.
-    if(!replace) 
-        return this;
-
-    return this.replace(new RegExp('[' + search + ']', 'g'), replace);
-};
-
-function updateNetworkStatus( uiKey, status, id, value ) {
-	if( status == value )
-	{
-		// Add the display.
-		$( '.' + uiKey + '-queries' ).append(
-			$( '<div></div>' )
-				.attr( 'class', 'row' )
-				.attr( 'id', id )
-				.append(
-					$( '<div></div>' )
-						.attr( 'class', 'col-xs-12' )
-						.append(
-							$( '<p></p>' )
-								.attr( 'class', 'announcement-text' )
-								.text( id )
-						)
-				)
-		);
-	}
-	else
-	{
-		var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' ).replaceAll( ' ', '\\ ' );
-		// Remove the display.
-		$( '.' + uiKey + '-queries #' + escapedId ).remove();
-	}
-}
-
-// Populate the data model as needed.
-function initModelData( data ) {
-
-	var addressMatch = window.location.href.match( /\/addr\/([a-zA-Z0-9]+)$/ );
-	if( addressMatch )
-		data.addressData.set( { address: addressMatch[1] } );
-
-};
-
-var balanceTableTemplate = _.template( "\
-	<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
-        <h2 class=\"hidden-xs <%= currency %>-name\"><%= currencyName %></h2>\
-        <div class=\"hidden-xs table-responsive\">\
-          <table class=\"table table-hover table-striped tablesorter\">\
-            <thead>\
-              <tr>\
-                <th>Address <i class=\"fa fa-sort\"></i></th>\
-                <th>Balance <i class=\"fa fa-sort\"></i></th>\
-              </tr>\
-            </thead>\
-            <tbody>\
-              <tr>\
-                <td><%= address %></td>\
-                <td class=\"<%= currency %>-balance\"><%= balance %></td>\
-              </tr>\
-            </tbody>\
-          </table>\
-        </div>\
-        <h3 class=\"visible-xs <%= currency %>-name\"><%= currencyName %></h2>\
-        <div class=\"visible-xs row\">\
-        	<div class=\"col-xs-6 text-right\">\
-        		<h4 class=\"<%= currency %>-balance\"><%= balance %></h5>\
-        	</div>\
-        	<div class=\"col-xs-6 text-left\">\
-        		<h4 class=\"<%= currency %>-value\"></h5>\
-        	</div>\
-        </div>\
-        <hr class=\"visible-xs\" />\
-    </div>\
-");
-function updateBalanceTable( currency ) {
-	var existingTables = $( '#balance-tables #' + currency + '-balances' );
-	if( existingTables.length == 0 )
-	{
-		var balance = svalletData.balances.get( currency );
-		if( balance > 0 )
-		{
-			// Make a new table.
-			var coinData = svalletData.coinData.get( currency );
-			var currencyName = currency;
-			if( coinData && coinData.name )
-				currencyName = coinData.name;
-			var url = coinData ? coinData.url : null;
-
-			$( '#balance-tables' ).append( $( balanceTableTemplate( 
-				{ 
-					"currencyName": currencyName,
-					"currency": currency,
-					"address": svalletData.addressData.get( 'address' ),
-					"balance": '<a href="' + 
-						svalletData.balances.get( currency + '-source' ) + 
-						'">' +
-						formatCurrency( currency, balance ) +
-						'</a>'
-				}
-			)));
-
-		}
-	}
-	else
-	{
-		$( '#balance-tables #' + currency + '-balances .' + currency + '-balance' )
-			.html( '<a href="' + 
-					svalletData.balances.get( currency + '-source' ) + 
-					'">' +
-					formatCurrency( currency, svalletData.balances.get( currency ) ) +
-					'</a>' );
-	}
-
-	// We'll need to update the values, if they exist.
-	updateValues( currency );
-}
-
-function updateTotalSum() {
-	var sum = 0;
-	for( var currencyKey in svalletData.values.attributes )
-	{
-		if( currencyKey.indexOf( '-source' ) != currencyKey.length - 7 )
-		{
-			var currencyBalance = svalletData.balances.get( currencyKey );
-			if( currencyBalance > 0 )
-				sum += currencyBalance * svalletData.values.get( currencyKey );
-		}
-	}
-	if( sum > 0 )
-	{
-		$( '.total-asset-value' ).text( formatCurrency( 'USD', sum ));
-		$( '.total-assets-display' ).removeClass( 'hidden' );
-	}
-	else
-	{
-		$( '.total-assets-display' ).addClass( 'hidden' );
-	}
-}
-
-function updateValues( currency ) {
-	var balance = svalletData.balances.get( currency );
-	if( balance != null )
-	{
-		var value = svalletData.values.get( currency );
-		if( value != null )
-		{
-			var valueOfBalance = balance * svalletData.values.get( currency );
-
-			var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
-			if( outputFields.length == 0 )
-			{
-				$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
-					$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
-				$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
-					$( '<td>' )
-						.attr( 'class', currency + '-value')
-						
-					);
-				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.html( 
-						'<a href=\"' + svalletData.values.get( currency + '-source' ) + '\">' 
-						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
-			}
-			else
-			{
-				$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-					.html( 
-						'<a href=\"' + svalletData.values.get( currency + '-source' ) + '\">' 
-						+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
-			}
-
-		}
-	}
-}
-
-function updateCoinData( currency ) {
-	var data = svalletData.coinData.get( currency );
-	if( data != null )
-	{
-		if( data.url )
-		{
-			$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
-				.html( '<a href="' + data.url + '">' + data.name + '</a>' );
-		}
-		else
-		{
-			$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
-				.text( data.name );						
-		}
-	}
-}
-
-// Actually recovers balances asyncronously.
-function BalanceQueryWorker( data ) {
 	var self = this;
 	this.addressModel = data.addressData;
 	this.balances = data.balances;
@@ -539,7 +218,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	var queriesMade = 0;
 
 	queriesMade++;
-	requestor.getJSON( 
+	self.requestor.getJSON( 
 		'blockr:balances',
 		'https://btc.blockr.io/api/v1/address/info/' + originalAddress,
 		function( response ) {
@@ -548,7 +227,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			{
 				if( response.code == 200 )
 				{
-					facilitator.nominateValue( 
+					self.facilitator.nominateValue( 
 						'balance-bitcoin', self.balanceSetter, 
 						'https://btc.blockr.io',
 						response.data.balance );
@@ -567,7 +246,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	requestor.getJSON( 
+	self.requestor.getJSON( 
 		'insight.is:balances',
 		'http://live.insight.is/api/addr/' + originalAddress,
 		function( response ) {
@@ -576,7 +255,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 			{
 				if( response.balance )
 				{
-					facilitator.nominateValue(
+					self.facilitator.nominateValue(
 						'balance-bitcoin', self.balanceSetter,
 						'http://live.insight.is/',
 						response.balance );
@@ -595,7 +274,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	requestor.getJSON( 
+	self.requestor.getJSON( 
 		'Masterchain:balances',
 		'/proxy',
 		{
@@ -615,14 +294,14 @@ BalanceQueryWorker.prototype.getBalances = function() {
 							var item = data.balance[i];
 							if( item.symbol == 'BTC' )
 							{
-								facilitator.nominateValue( 
+								self.facilitator.nominateValue( 
 									'balance-bitcoin', self.balanceSetter,
 									'https://masterchest.info/',
 									parseFloat( item.value ));
 							}
 							else
 							{
-								facilitator.nominateValue( 
+								self.facilitator.nominateValue( 
 									'balance-' + item.symbol, self.balanceSetter,
 									'https://masterchest.info/',
 									parseFloat( item.value ));
@@ -648,7 +327,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	requestor.post( 
+	self.requestor.post( 
 		'Omni Test:balances',
 		'https://test.omniwallet.org/v1/address/addr/',
 		{ addr: originalAddress },
@@ -663,21 +342,21 @@ BalanceQueryWorker.prototype.getBalances = function() {
 						var item = response.balance[v];
 						if( item.symbol == 'BTC' )
 						{
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'balance-bitcoin', self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value / 100000000 );
 						}
 						else if( item.symbol == 'MSC' || item.symbol == 'TMSC' )
 						{
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'balance-' + item.symbol, self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value / 100000000 );
 						}
 						else
 						{
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'balance-MSC-' + item.symbol, self.balanceSetter,
 								'https://test.omniwallet.org/',
 								item.value );
@@ -697,7 +376,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	requestor.getJSON( 
+	self.requestor.getJSON( 
 		'blockscan:balances',
 		'/proxy',
 		{
@@ -718,7 +397,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 							var symbol = ( item.asset == 'XCP' ) ?
 											item.asset : 'XCP-' + item.asset;
 
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'balance-' + symbol, self.balanceSetter,
 								'http://blockscan.com//',
 								parseFloat( item.balance ));
@@ -740,7 +419,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 		});
 
 	queriesMade++;
-	requestor.getJSON( 
+	self.requestor.getJSON( 
 		'Masterchest:balances',
 		'/proxy',
 		{
@@ -762,7 +441,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 							var symbol = ( item.symbol == 'MSC' || item.symbol == 'TMSC' ) ?
 										item.symbol : 'MSC-' + item.symbol;
 
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'balance-' + symbol, self.balanceSetter,
 								'https://masterchest.info/',
 								item.value );
@@ -789,7 +468,7 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	
 	// blockchain.info doesn't return Access-Control-Allow-Origin, so we can't get to it.
 	// We may be able to form things properly such that CORS works, see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
-/*	requestor.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
+/*	self.requestor.getJSON( 'https://blockchain.info/address/' + originalAddress + '?format=json&cors=true',
 		function( response ) {
 			if( originalAddress == self.addressModel.get( 'address '))
 			{
@@ -804,8 +483,14 @@ BalanceQueryWorker.prototype.getBalances = function() {
 	
 }
 
-// Recovers values of currencies.
-function ValueQueryWorker( data ) {
+/******
+ *    ValueQueryWorker: Recovers values of currencies.
+ ******/
+function ValueQueryWorker( svallet ) {
+	this.requestor = svallet.requestor;
+	this.facilitator = svallet.facilitator;
+	var data = svallet.svalletData;
+	
 	var self = this;
 	this.balances = data.balances;
 	this.values = data.values;
@@ -849,7 +534,7 @@ ValueQueryWorker.prototype.getValues = function() {
 
 		// This call actually tends to time out - an ideal situation for having multiple sources!
 		requestsMade++;
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'blockr:value-btc',
 			'http://btc.blockr.io/api/v1/exchangerate/current',
 			function( response ) {
@@ -857,7 +542,7 @@ ValueQueryWorker.prototype.getValues = function() {
 				if( response.code == 200 )
 				{
 					var usdToBtc = parseFloat( response.data[0].rates.BTC );
-					facilitator.nominateValue( 
+					self.facilitator.nominateValue( 
 						'value-bitcoin', self.valueSetter,
 						'http://blockr.io', 1.0 / usdToBtc );
 				}
@@ -876,7 +561,7 @@ ValueQueryWorker.prototype.getValues = function() {
 		);
 
 		requestsMade++;
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'BitcoinAverage:value-btc',
 			'https://api.bitcoinaverage.com/exchanges/USD',
 			function( response ) {
@@ -889,7 +574,7 @@ ValueQueryWorker.prototype.getValues = function() {
 					{
 						if( response.hasOwnProperty( k ) && response[ k ].rates )
 						{
-							facilitator.nominateValue( 
+							self.facilitator.nominateValue( 
 								'value-bitcoin', self.valueSetter,
 								response[k].display_URL,
 								response[ k ].rates.last );
@@ -912,7 +597,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	}
 	else if( this.currency == 'MSC' )
 	{
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'MasterXchange:value-msc',
 			'https://masterxchange.com/api/v2/trades.php?currency=msc',
 			function( response ) {
@@ -944,7 +629,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	}
 	else if( this.currency == 'XCP' )
 	{
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'poloniex:value-xcp',
 			'/proxy',
 			{
@@ -981,7 +666,7 @@ ValueQueryWorker.prototype.getValues = function() {
 	}
 	else if( this.currency == 'MSC-SP3' )
 	{
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'MasterXchange:value-msc-sp3',
 			'https://masterxchange.com/api/v2/trades.php?currency=maid',
 			function( response ) {
@@ -1024,7 +709,7 @@ ValueQueryWorker.prototype.getValues = function() {
 		var poloniexDtt = this.currency.match( /^XCP-([A-Za-z0-9]+)DTT$/ );
 		if( poloniexDtt )
 		{
-			requestor.getJSON( 
+			self.requestor.getJSON( 
 				'poloniex:value-' + poloniexDtt[1],
 				'/proxy',
 				{
@@ -1062,8 +747,13 @@ ValueQueryWorker.prototype.getValues = function() {
 }
 
 
-// Recovers coinDatas of currencies.
-function CoinDataQueryWorker( data ) {
+/****
+ * Coin Data Query Worker:  Recovers coinDatas of currencies.
+ ****/
+function CoinDataQueryWorker( svallet ) {
+	this.requestor = svallet.requestor;
+	var data = svallet.svalletData;
+	
 	var self = this;
 	this.balances = data.balances;
 	this.coinData = data.coinData;
@@ -1093,7 +783,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 
 	if( currency == 'bitcoin' )
 	{
-		requestor.getJSON( 
+		self.requestor.getJSON( 
 			'blockr:info-bitcoin',
 			'http://btc.blockr.io/api/v1/coin/info',
 			function( response ) {
@@ -1147,7 +837,7 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 		var match = currency.match( /^MSC-SP([0-9]+)$/ )
 		if( match )
 		{
-			requestor.getJSON( 
+			self.requestor.getJSON( 
 				'Omni Test:info-' + currency,
 				'https://test.omniwallet.org/v1/property/' + match[1] + '.json',
 				function( response ) {
@@ -1192,3 +882,356 @@ CoinDataQueryWorker.prototype.getCoinData = function() {
 	}
 
 }
+
+
+/*************
+ *   Actual UI Code that uses everything above.
+ *************/
+
+
+var addressQRs = null;
+
+$( function() {
+	var elements = document.getElementsByClassName( "address-qr" );
+	if( elements.length > 0 )
+	{
+		for( var i=0; i<elements.length; i++ )
+		{
+			if( !addressQRs )
+				addressQRs = [];
+			addressQRs.push( new QRCode( elements[i], {
+				width: 192, height: 192
+			} ));
+		}
+	}
+
+	var svallet = new SingleAddressSvallet();
+	
+	attachModelListeners( svallet.svalletData );
+	attachModelSetters( svallet.svalletData );
+
+	initModelData( svallet.svalletData );
+
+	// This HAS to happen after the rest of the UI syncs up, since address changes
+	// after this point will redirect the browser.
+	svallet.svalletData.addressData.on( 'change:address', function( data ) {
+		window.location.href = '/addr/' + data.changed.address;
+	});
+
+	function attachModelSetters( data ) {
+		$( '#address-search' ).submit(function(e) {
+			e.preventDefault();
+			data.addressData.set( { address: $( '#address-search input' ).val() });
+		});
+	};
+
+	function attachModelListeners( data ) {
+
+		// Update the display of the currently viewed address in the UI.
+		data.addressData.on( 'change:address', function( data ) {
+			$( '#address-search input' ).attr( 'placeholder', data.changed.address );
+			$( '.address-display' ).text( data.changed.address );
+			window.document.title = 'Svallet - ' + data.changed.address;
+			if( addressQRs )
+			{
+				addressQRs.forEach( function( qr ) {
+					qr.clear();
+					qr.makeCode( data.changed.address );
+				});
+			}
+		} );
+
+		data.balances.on( 'change', updateTotalSum );
+		data.values.on( 'change', updateTotalSum );
+
+		data.balances.on( 'change', function( data ) {
+			for( var v in data.changed )
+				if( data.changed.hasOwnProperty( v ))
+				{
+					if( v.indexOf( '-source' ) != v.length - 7 )
+						updateBalanceTable( v );
+				}
+		} );
+
+		data.values.on( 'change', function( data ) {
+			for( var v in data.changed )
+				if( data.changed.hasOwnProperty( v ))
+				{
+					if( v.indexOf( '-source' ) != v.length - 7 )
+						updateValues( v );
+				}
+		});
+
+
+		data.coinData.on( 'change', function( data ) {
+			for( var v in data.changed )
+				if( data.changed.hasOwnProperty( v ))
+				{
+					if( v.indexOf( '-source' ) != v.length -7 )
+					{
+						updateCoinData( v );
+						updateBalanceTable( v );
+					}
+				}
+		});
+
+		data.networkStatus.on( 'change', function( data ) {
+			for( var v in data.changed )
+			{
+				if( data.changed.hasOwnProperty( v ))
+					updateNetworkStatus( 'inprogress', 'In Progress', v, data.changed[v] );
+					updateNetworkStatus( 'successful', 'OK', v, data.changed[v] );
+					updateNetworkStatus( 'failed', 'FAILED', v, data.changed[v] );
+			}
+		});
+
+		data.coinIcons.on( 'change', function( data ) {
+			for( var v in data.changed )
+			{
+				if( data.changed.hasOwnProperty( v ) ){
+					$( '.' + v + '-name' ).prepend(
+						$( '<img />' )
+							.attr( 'src', data.changed[ v ] )
+							.attr( 'id', v + '-icon' )
+							.attr( 'class', 'currency-icon' )
+					);
+				};
+			}
+		});
+	}
+
+	var formatters = {
+		USD: function( value ){ return '$' + value.toFixed( 2 ) },
+		bitcoin: function( value ) { return ( value ).toFixed( 8 ) + ' BTC' },
+		MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
+		TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
+		SPdivisible: function( value ) {
+			return ( value / 100000000 ).toFixed( 8 );
+		},
+		SPindivisible: function( value ) {
+			return value.toFixed( 0 );
+		}
+	}
+	function formatCurrency( currency, value ) {
+		if( formatters[ currency ])
+			return formatters[ currency ]( value );
+		else if( currency.match( /^MSC-SP[0-9]+$/ ))
+		{
+			var propertyData = svallet.svalletData.coinData.get( currency );
+
+			if( propertyData && propertyData.divisible )
+			{
+				return formatters.SPdivisible( value );
+			}
+			else
+			{
+				return formatters.SPindivisible( value );
+			}
+		}
+		else
+		{
+			var xcpMatch = currency.match( /^XCP-([A-Za-z0-9]+)$/ )
+			if( xcpMatch )
+				return value + ' ' + xcpMatch[1];
+			else
+				return value + ' ' + currency;
+		}
+	}
+
+	String.prototype.replaceAll = function(search, replace)
+	{
+	    //if replace is null, return original string otherwise it will
+	    //replace search string with 'undefined'.
+	    if(!replace) 
+	        return this;
+
+	    return this.replace(new RegExp('[' + search + ']', 'g'), replace);
+	};
+
+	function updateNetworkStatus( uiKey, status, id, value ) {
+		if( status == value )
+		{
+			// Add the display.
+			$( '.' + uiKey + '-queries' ).append(
+				$( '<div></div>' )
+					.attr( 'class', 'row' )
+					.attr( 'id', id )
+					.append(
+						$( '<div></div>' )
+							.attr( 'class', 'col-xs-12' )
+							.append(
+								$( '<p></p>' )
+									.attr( 'class', 'announcement-text' )
+									.text( id )
+							)
+					)
+			);
+		}
+		else
+		{
+			var escapedId = id.replaceAll( '.', '\\.' ).replaceAll( ':', '\\:' ).replaceAll( ' ', '\\ ' );
+			// Remove the display.
+			$( '.' + uiKey + '-queries #' + escapedId ).remove();
+		}
+	}
+
+	// Populate the data model as needed.
+	function initModelData( data ) {
+
+		var addressMatch = window.location.href.match( /\/addr\/([a-zA-Z0-9]+)$/ );
+		if( addressMatch )
+			data.addressData.set( { address: addressMatch[1] } );
+
+	};
+
+	var balanceTableTemplate = _.template( "\
+		<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
+	        <h2 class=\"hidden-xs <%= currency %>-name\"><%= currencyName %></h2>\
+	        <div class=\"hidden-xs table-responsive\">\
+	          <table class=\"table table-hover table-striped tablesorter\">\
+	            <thead>\
+	              <tr>\
+	                <th>Address <i class=\"fa fa-sort\"></i></th>\
+	                <th>Balance <i class=\"fa fa-sort\"></i></th>\
+	              </tr>\
+	            </thead>\
+	            <tbody>\
+	              <tr>\
+	                <td><%= address %></td>\
+	                <td class=\"<%= currency %>-balance\"><%= balance %></td>\
+	              </tr>\
+	            </tbody>\
+	          </table>\
+	        </div>\
+	        <h3 class=\"visible-xs <%= currency %>-name\"><%= currencyName %></h2>\
+	        <div class=\"visible-xs row\">\
+	        	<div class=\"col-xs-6 text-right\">\
+	        		<h4 class=\"<%= currency %>-balance\"><%= balance %></h5>\
+	        	</div>\
+	        	<div class=\"col-xs-6 text-left\">\
+	        		<h4 class=\"<%= currency %>-value\"></h5>\
+	        	</div>\
+	        </div>\
+	        <hr class=\"visible-xs\" />\
+	    </div>\
+	");
+	function updateBalanceTable( currency ) {
+		var existingTables = $( '#balance-tables #' + currency + '-balances' );
+		if( existingTables.length == 0 )
+		{
+			var balance = svallet.svalletData.balances.get( currency );
+			if( balance > 0 )
+			{
+				// Make a new table.
+				var coinData = svallet.svalletData.coinData.get( currency );
+				var currencyName = currency;
+				if( coinData && coinData.name )
+					currencyName = coinData.name;
+				var url = coinData ? coinData.url : null;
+
+				$( '#balance-tables' ).append( $( balanceTableTemplate( 
+					{ 
+						"currencyName": currencyName,
+						"currency": currency,
+						"address": svallet.svalletData.addressData.get( 'address' ),
+						"balance": '<a href="' + 
+							svallet.svalletData.balances.get( currency + '-source' ) + 
+							'">' +
+							formatCurrency( currency, balance ) +
+							'</a>'
+					}
+				)));
+
+			}
+		}
+		else
+		{
+			$( '#balance-tables #' + currency + '-balances .' + currency + '-balance' )
+				.html( '<a href="' + 
+						svallet.svalletData.balances.get( currency + '-source' ) + 
+						'">' +
+						formatCurrency( currency, svallet.svalletData.balances.get( currency ) ) +
+						'</a>' );
+		}
+
+		// We'll need to update the values, if they exist.
+		updateValues( currency );
+	}
+
+	function updateTotalSum() {
+		var sum = 0;
+		for( var currencyKey in svallet.svalletData.values.attributes )
+		{
+			if( currencyKey.indexOf( '-source' ) != currencyKey.length - 7 )
+			{
+				var currencyBalance = svallet.svalletData.balances.get( currencyKey );
+				if( currencyBalance > 0 )
+					sum += currencyBalance * svallet.svalletData.values.get( currencyKey );
+			}
+		}
+		if( sum > 0 )
+		{
+			$( '.total-asset-value' ).text( formatCurrency( 'USD', sum ));
+			$( '.total-assets-display' ).removeClass( 'hidden' );
+		}
+		else
+		{
+			$( '.total-assets-display' ).addClass( 'hidden' );
+		}
+	}
+
+	function updateValues( currency ) {
+		var balance = svallet.svalletData.balances.get( currency );
+		if( balance != null )
+		{
+			var value = svallet.svalletData.values.get( currency );
+			if( value != null )
+			{
+				var valueOfBalance = balance * svallet.svalletData.values.get( currency );
+
+				var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
+				if( outputFields.length == 0 )
+				{
+					$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
+						$( '<th>' ).html( 'Value <i class="fa fa-sort"></i>' ));
+					$( '#balance-tables #' + currency + '-balances tbody tr' ).append( 
+						$( '<td>' )
+							.attr( 'class', currency + '-value')
+							
+						);
+					$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
+						.html( 
+							'<a href=\"' + svallet.svalletData.values.get( currency + '-source' ) + '\">' 
+							+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+				}
+				else
+				{
+					$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
+						.html( 
+							'<a href=\"' + svallet.svalletData.values.get( currency + '-source' ) + '\">' 
+							+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+				}
+
+			}
+		}
+	}
+
+	function updateCoinData( currency ) {
+		var data = svallet.svalletData.coinData.get( currency );
+		if( data != null )
+		{
+			if( data.url )
+			{
+				$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
+					.html( '<a href="' + data.url + '">' + data.name + '</a>' );
+			}
+			else
+			{
+				$( '#balance-tables #' + currency + '-balances .' + currency + '-name' )
+					.text( data.name );						
+			}
+		}
+	}
+});
+
+
