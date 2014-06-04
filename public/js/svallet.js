@@ -1,6 +1,6 @@
 
 /*************
- *   UI Code that uses svallet-lib.js.
+ *   UI Code.
  *************/
 
 var addressQRs = null;
@@ -19,6 +19,7 @@ $( function() {
 		}
 	}
 
+	// This comes from svallet-core.js
 	var svallet = new SingleAddressSvallet();
 	
 	attachModelListeners( svallet.svalletData );
