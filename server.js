@@ -1,6 +1,5 @@
 var express = require('express');
-var request = require( 'request' );
-var cheerio = require( 'cheerio' );
+var svallet_core = require( 'svallet-core' );
  
 var app = express();
 var faviconCache = {};
@@ -19,7 +18,7 @@ app.get( '/', function( req, res ) {
 	res.sendfile( __dirname + '/public/landing.html' );
 });
 
-require( './lib/svallet-express.js' ).attach( app );
+svallet_core.attach( app );
 
 var port = Number( process.env.PORT || 4000 );
 app.listen( port, function() {
