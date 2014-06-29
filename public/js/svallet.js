@@ -116,7 +116,7 @@ $( function() {
 	}
 
 	var formatters = {
-		USD: function( value ){ return '$' + value.toFixed( 2 ) },
+		USD: function( value ){ return numeral( value ).format( '$0,0[.]00' ) },
 		bitcoin: function( value ) { return ( value ).toFixed( 8 ) + ' BTC' },
 		MSC: function( value ) { return value.toFixed( 8 ) + ' MSC' },
 		TMSC: function( value ) { return value.toFixed( 8 ) + ' TMSC' },
