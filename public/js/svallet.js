@@ -36,7 +36,7 @@ $( function() {
 	function attachModelSetters( data ) {
 		$( '#address-search' ).submit(function(e) {
 			e.preventDefault();
-			data.addressData.set( { address: $( '#address-search input' ).val() });
+			window.location.href = '/addr/' + $( '#address-search input' ).val();
 		});
 	};
 
