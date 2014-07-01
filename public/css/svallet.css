@@ -4,3 +4,8 @@ img.currency-icon {
 	margin-right: 0.25em;
 	margin-bottom: 0.1em;
 }
+
+.sidebar-address-list .address-display td {
+	overflow: hidden;
+	max-width: 160px;
+}
