@@ -15,6 +15,10 @@ app.get( '/addr/:address', function( req, res ) {
 	res.sendfile( __dirname + '/public/address.html' );
 });
 
+app.get( '/xpub/:xpub', function( req, res ) {
+	res.sendfile( __dirname + '/public/xpub.html' );
+});
+
 app.get( '/', function( req, res ) {
 	res.sendfile( __dirname + '/public/landing.html' );
 });
