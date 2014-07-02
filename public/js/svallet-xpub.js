@@ -48,7 +48,11 @@ $( function() {
 		} );
 
 		svallet.on( 'change:description', function( data ) {
-			//console.log( 'Description Event: ' + data.address );
+			console.log( 'Description Event: ' + data.address );
+			if( data.attribute.indexOf( '-source' ) != data.attribute.length - 7 )
+			{
+				updateCoinData( data.attribute, data.newValue );
+			}
 		} );
 
 		svallet.on( 'change:network', function( data ) {
@@ -58,7 +62,13 @@ $( function() {
 		} );
 
 		svallet.on( 'change:icon', function( data ) {
-			//console.log( 'Icon Event: ' + data.address );
+			if( $( 'img#' + data.attribute + '-icon' ).length == 0 )
+				$( '.' + data.attribute + '-name' ).prepend(
+					$( '<img />' )
+						.attr( 'src', data.newValue )
+						.attr( 'id', data.attribute + '-icon' )
+						.attr( 'class', 'currency-icon' )
+				);
 		} );
 
 	}
@@ -80,17 +90,16 @@ $( function() {
 			return formatters[ currency ]( value );
 		else if( currency.match( /^MSC-SP[0-9]+$/ ))
 		{
-			console.log( 'TODO: Look up divisibility of tokens!' );
-			/*var propertyData = svallet.svalletData.coinData.get( currency );
+			var propertyData = svallet.getCoinData( currency );
 
 			if( propertyData && propertyData.divisible )
 			{
 				return formatters.SPdivisible( value );
 			}
 			else
-			{*/
+			{
 				return formatters.SPindivisible( value );
-			//}
+			}
 		}
 		else
 		{
@@ -180,22 +189,18 @@ $( function() {
 	    </div>\
 	");
 	function updateBalanceTable( currency, address, balance ) {
-		if( currency != 'bitcoin' ) console.log( "Currency Update!: " + currency );
 
 		// First, check to see if we have a table for this currency type.
 		var existingTables = $( '#balance-tables #' + currency + '-balances' );
 		if( existingTables.length == 0 )
 		{
-			if( currency != 'bitcoin' ) console.log( 'A' );
 			if( balance > 0 )
 			{
-				if( currency != 'bitcoin' ) console.log( 'B' );
 				// Make a new table.
-//				var coinData = svallet.svalletData.coinData.get( currency );
+				var coinData = svallet.getCoinData( currency );
 				var currencyName = currency;
-/*				if( coinData && coinData.name )
+				if( coinData && coinData.name )
 					currencyName = coinData.name;
-				var url = coinData ? coinData.url : null;*/
 
 				$( '#balance-tables' ).append( $( balanceTableTemplate( 
 					{ 
@@ -210,15 +215,12 @@ $( function() {
 		}
 		else
 		{
-			if( currency != 'bitcoin' ) console.log( 'C' );
 			// If we have a table for this currency type, see if we have a row for this address already.
 			var existingRows = $( 'tr#' + currency + '-' + address );
 			if( existingRows.length == 0 )
 			{
-			if( currency != 'bitcoin' ) console.log( 'D' );
 				if( balance > 0 )
 				{
-			if( currency != 'bitcoin' ) console.log( 'E' );
 					$( '#balance-tables #' + currency + '-balances tbody' )
 						.append( $( '<tr></tr>' )
 							.attr( 'id', currency + '-' + address )
@@ -234,7 +236,6 @@ $( function() {
 			}
 			else
 			{
-			if( currency != 'bitcoin' ) console.log( 'F' );
 				$( 'tr#' + currency + '-' + address + ' ' + currency + '-balances .' + currency + '-balance' )
 					.text( formatCurrency( currency, balance ) );
 
@@ -303,8 +304,7 @@ $( function() {
 		}
 	}
 
-	function updateCoinData( currency ) {
-		var data = svallet.svalletData.coinData.get( currency );
+	function updateCoinData( currency, data ) {
 		if( data != null )
 		{
 			if( data.url )

@@ -242,7 +242,6 @@ $( function() {
 				var currencyName = currency;
 				if( coinData && coinData.name )
 					currencyName = coinData.name;
-				var url = coinData ? coinData.url : null;
 
 				$( '#balance-tables' ).append( $( balanceTableTemplate( 
 					{ 
