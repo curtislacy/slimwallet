@@ -48,7 +48,6 @@ $( function() {
 		} );
 
 		svallet.on( 'change:description', function( data ) {
-			console.log( 'Description Event: ' + data.address );
 			if( data.attribute.indexOf( '-source' ) != data.attribute.length - 7 )
 			{
 				updateCoinData( data.attribute, data.newValue );
@@ -159,7 +158,19 @@ $( function() {
 
 	var balanceTableTemplate = _.template( "\
 		<div class=\"col-lg-12\" id=\"<%= currency %>-balances\">\
-	        <h2 class=\"hidden-xs <%= currency %>-name\"><%= currencyName %></h2>\
+			<div class=\"hidden-xs row\">\
+				<div class=\"col-sm-4\">\
+			        <h3 class=\"<%= currency %>-name\">\
+			        	<%= currencyName %>\
+			        </h2>\
+			    </div>\
+			    <div class=\"col-sm-5\">\
+		        	<h3 class=\"<%= currency %>-balance-sum\"></h2>\
+			    </div>\
+			    <div class=\"col-sm-3\">\
+		        	<h3 class=\"<%= currency %>-value-sum\"></h2>\
+			    </div>\
+			</div>\
 	        <div class=\"hidden-xs table-responsive\">\
 	          <table class=\"table table-hover table-striped tablesorter\">\
 	            <thead>\
@@ -179,7 +190,7 @@ $( function() {
 	        <h3 class=\"visible-xs <%= currency %>-name\"><%= currencyName %></h2>\
 	        <div class=\"visible-xs row\">\
 	        	<div class=\"col-xs-6 text-right\">\
-	        		<h4 class=\"<%= currency %>-balance\"><%= balance %></h5>\
+	        		<h4 class=\"<%= currency %>-balance-sum\"></h5>\
 	        	</div>\
 	        	<div class=\"col-xs-6 text-left\">\
 	        		<h4 class=\"<%= currency %>-value\"></h5>\
@@ -241,6 +252,12 @@ $( function() {
 
 			}
 		}
+
+		console.log( '*** About to set total ' + currency );
+		var totalBalance = svallet.getTotalBalance( currency );
+		console.log( '*** Total ' + currency + ': ' + totalBalance );
+		$( '.' + currency + '-balance-sum' )
+			.text( formatCurrency( currency, totalBalance ));
 
 		// We'll need to update the values, if they exist.
 		//updateValues( currency );*/
