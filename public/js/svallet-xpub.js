@@ -44,7 +44,8 @@ $( function() {
 		} );
 
 		svallet.on( 'change:value', function( data ) {
-			//console.log( 'Value Event: ' + data.address );
+			if( data.attribute.indexOf( '-source' ) != data.attribute.length - 7 )
+				updateValues( data.attribute );
 		} );
 
 		svallet.on( 'change:description', function( data ) {
@@ -193,7 +194,7 @@ $( function() {
 	        		<h4 class=\"<%= currency %>-balance-sum\"></h5>\
 	        	</div>\
 	        	<div class=\"col-xs-6 text-left\">\
-	        		<h4 class=\"<%= currency %>-value\"></h5>\
+	        		<h4 class=\"<%= currency %>-value-sum\"></h5>\
 	        	</div>\
 	        </div>\
 	        <hr class=\"visible-xs\" />\
@@ -253,14 +254,12 @@ $( function() {
 			}
 		}
 
-		console.log( '*** About to set total ' + currency );
 		var totalBalance = svallet.getTotalBalance( currency );
-		console.log( '*** Total ' + currency + ': ' + totalBalance );
 		$( '.' + currency + '-balance-sum' )
 			.text( formatCurrency( currency, totalBalance ));
 
 		// We'll need to update the values, if they exist.
-		//updateValues( currency );*/
+		updateValues( currency );
 	}
 
 	function updateTotalSum() {
@@ -285,16 +284,22 @@ $( function() {
 		}
 	}
 
-	function updateValues( currency ) {
-		var balance = svallet.svalletData.balances.get( currency );
+	function calculateValue( currency ) {
+		var balance = svallet.getTotalBalance( currency );
 		if( balance != null )
 		{
-			var value = svallet.svalletData.values.get( currency );
+			var value = svallet.getValue( currency );
 			if( value != null )
 			{
-				var valueOfBalance = balance * svallet.svalletData.values.get( currency );
+				return balance * value;
+			}
+		}
+		return null;
+	}
+	function updateValues( currency ) {
+		$( '.' + currency + '-value-sum' ).text( formatCurrency( 'USD', calculateValue( currency ) ));
 
-				var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
+/*				var outputFields = $( '#balance-tables #' + currency + '-balances td.' + currency + '-value' );
 				if( outputFields.length == 0 )
 				{
 					$( '#balance-tables #' + currency + '-balances thead tr' ).append( 
@@ -305,20 +310,20 @@ $( function() {
 							
 						);
 					$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-						.html( 
-							'<a href=\"' + svallet.svalletData.values.get( currency + '-source' ) + '\">' 
-							+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+						.text( formatCurrency( 'USD', valueOfBalance ) );
 				}
 				else
 				{
 					$( '#balance-tables #' + currency + '-balances .' + currency + '-value' )
-						.html( 
-							'<a href=\"' + svallet.svalletData.values.get( currency + '-source' ) + '\">' 
-							+ formatCurrency( 'USD', valueOfBalance ) + '</a>');
+						.text( formatCurrency( 'USD', valueOfBalance ));
 				}
+*/
 
-			}
-		}
+		var allCurrencies = svallet.getValuatedCurrencies();
+		var totalValue = 0;
+		for( var i=0; i<allCurrencies.length; i++ )
+			totalValue += calculateValue( allCurrencies[ i ]);
+		$( '.total-asset-value' ).text( formatCurrency( 'USD', totalValue ));
 	}
 
 	function updateCoinData( currency, data ) {
