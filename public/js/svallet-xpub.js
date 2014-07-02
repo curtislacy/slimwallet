@@ -17,7 +17,7 @@ $( function() {
 		window.location.href = '/xpub/' + $( '#xpub-search input' ).val();
 	});
 
-	var fromPub = Bitcoin.HDWallet.fromBase58( xpubMatch[1] );
+	var fromPub = Bitcoin.HDNode.fromBase58( xpubMatch[1] );
 	for( var i=1; i<=10; i++ )
 	{
 		var derived = fromPub.derive( i );
