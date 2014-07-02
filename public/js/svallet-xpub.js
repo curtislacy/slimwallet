@@ -6,7 +6,7 @@
 $( function() {
 
 	// This comes from svallet-core.js
-	var svallet = new SingleAddressSvallet();
+	var svallet = new MultiAddressSvallet();
 
 	var xpubMatch = window.location.href.match( /\/xpub\/([a-zA-Z0-9]+)$/ );
 	if( xpubMatch )
@@ -21,7 +21,7 @@ $( function() {
 	for( var i=1; i<=10; i++ )
 	{
 		var derived = fromPub.derive( i );
-		console.log( 'Addr: ' + derived.getAddress().toString() );
+		svallet.add( derived.getAddress().toString() );
 		$( 'table.address-display' ).append(
 				$( '<tr></tr>' )
 					.append(
@@ -35,65 +35,32 @@ $( function() {
 			);
 	}
 
-	function attachModelListeners( data ) {
+	attachModelListeners( svallet );
 
-		data.balances.on( 'change', updateTotalSum );
-		data.values.on( 'change', updateTotalSum );
-
-		data.balances.on( 'change', function( data ) {
-			for( var v in data.changed )
-				if( data.changed.hasOwnProperty( v ))
-				{
-					if( v.indexOf( '-source' ) != v.length - 7 )
-						updateBalanceTable( v );
-				}
+	function attachModelListeners( svallet ) {
+		svallet.on( 'change:balance', function( data ) {
+			if( data.attribute.indexOf( '-source' ) != data.attribute.length - 7 )
+				updateBalanceTable( data.attribute, data.address, data.newValue );
 		} );
 
-		data.values.on( 'change', function( data ) {
-			for( var v in data.changed )
-				if( data.changed.hasOwnProperty( v ))
-				{
-					if( v.indexOf( '-source' ) != v.length - 7 )
-						updateValues( v );
-				}
-		});
+		svallet.on( 'change:value', function( data ) {
+			//console.log( 'Value Event: ' + data.address );
+		} );
 
+		svallet.on( 'change:description', function( data ) {
+			//console.log( 'Description Event: ' + data.address );
+		} );
 
-		data.coinData.on( 'change', function( data ) {
-			for( var v in data.changed )
-				if( data.changed.hasOwnProperty( v ))
-				{
-					if( v.indexOf( '-source' ) != v.length -7 )
-					{
-						updateCoinData( v );
-						updateBalanceTable( v );
-					}
-				}
-		});
+		svallet.on( 'change:network', function( data ) {
+			updateNetworkStatus( 'inprogress', 'In Progress', data.attribute + ':' + data.address.substring( 0, 4 ), data.newValue );
+			updateNetworkStatus( 'successful', 'OK', data.attribute + ':' + data.address.substring( 0, 4 ), data.newValue );
+			updateNetworkStatus( 'failed', 'FAILED', data.attribute + ':' + data.address.substring( 0, 4 ), data.newValue );
+		} );
 
-		data.networkStatus.on( 'change', function( data ) {
-			for( var v in data.changed )
-			{
-				if( data.changed.hasOwnProperty( v ))
-					updateNetworkStatus( 'inprogress', 'In Progress', v, data.changed[v] );
-					updateNetworkStatus( 'successful', 'OK', v, data.changed[v] );
-					updateNetworkStatus( 'failed', 'FAILED', v, data.changed[v] );
-			}
-		});
+		svallet.on( 'change:icon', function( data ) {
+			//console.log( 'Icon Event: ' + data.address );
+		} );
 
-		data.coinIcons.on( 'change', function( data ) {
-			for( var v in data.changed )
-			{
-				if( data.changed.hasOwnProperty( v ) ){
-					$( '.' + v + '-name' ).prepend(
-						$( '<img />' )
-							.attr( 'src', data.changed[ v ] )
-							.attr( 'id', v + '-icon' )
-							.attr( 'class', 'currency-icon' )
-					);
-				};
-			}
-		});
 	}
 
 	var formatters = {
@@ -113,16 +80,17 @@ $( function() {
 			return formatters[ currency ]( value );
 		else if( currency.match( /^MSC-SP[0-9]+$/ ))
 		{
-			var propertyData = svallet.svalletData.coinData.get( currency );
+			console.log( 'TODO: Look up divisibility of tokens!' );
+			/*var propertyData = svallet.svalletData.coinData.get( currency );
 
 			if( propertyData && propertyData.divisible )
 			{
 				return formatters.SPdivisible( value );
 			}
 			else
-			{
+			{*/
 				return formatters.SPindivisible( value );
-			}
+			//}
 		}
 		else
 		{
@@ -192,7 +160,7 @@ $( function() {
 	              </tr>\
 	            </thead>\
 	            <tbody>\
-	              <tr>\
+	              <tr id=\"<%= currency %>-<%= address %>\">\
 	                <td><%= address %></td>\
 	                <td class=\"<%= currency %>-balance\"><%= balance %></td>\
 	              </tr>\
@@ -211,30 +179,30 @@ $( function() {
 	        <hr class=\"visible-xs\" />\
 	    </div>\
 	");
-	function updateBalanceTable( currency ) {
+	function updateBalanceTable( currency, address, balance ) {
+		if( currency != 'bitcoin' ) console.log( "Currency Update!: " + currency );
+
+		// First, check to see if we have a table for this currency type.
 		var existingTables = $( '#balance-tables #' + currency + '-balances' );
 		if( existingTables.length == 0 )
 		{
-			var balance = svallet.svalletData.balances.get( currency );
+			if( currency != 'bitcoin' ) console.log( 'A' );
 			if( balance > 0 )
 			{
+				if( currency != 'bitcoin' ) console.log( 'B' );
 				// Make a new table.
-				var coinData = svallet.svalletData.coinData.get( currency );
+//				var coinData = svallet.svalletData.coinData.get( currency );
 				var currencyName = currency;
-				if( coinData && coinData.name )
+/*				if( coinData && coinData.name )
 					currencyName = coinData.name;
-				var url = coinData ? coinData.url : null;
+				var url = coinData ? coinData.url : null;*/
 
 				$( '#balance-tables' ).append( $( balanceTableTemplate( 
 					{ 
 						"currencyName": currencyName,
 						"currency": currency,
-						"address": svallet.svalletData.addressData.get( 'address' ),
-						"balance": '<a href="' + 
-							svallet.svalletData.balances.get( currency + '-source' ) + 
-							'">' +
-							formatCurrency( currency, balance ) +
-							'</a>'
+						"address": address,
+						"balance": formatCurrency( currency, balance )
 					}
 				)));
 
@@ -242,16 +210,39 @@ $( function() {
 		}
 		else
 		{
-			$( '#balance-tables #' + currency + '-balances .' + currency + '-balance' )
-				.html( '<a href="' + 
-						svallet.svalletData.balances.get( currency + '-source' ) + 
-						'">' +
-						formatCurrency( currency, svallet.svalletData.balances.get( currency ) ) +
-						'</a>' );
+			if( currency != 'bitcoin' ) console.log( 'C' );
+			// If we have a table for this currency type, see if we have a row for this address already.
+			var existingRows = $( 'tr#' + currency + '-' + address );
+			if( existingRows.length == 0 )
+			{
+			if( currency != 'bitcoin' ) console.log( 'D' );
+				if( balance > 0 )
+				{
+			if( currency != 'bitcoin' ) console.log( 'E' );
+					$( '#balance-tables #' + currency + '-balances tbody' )
+						.append( $( '<tr></tr>' )
+							.attr( 'id', currency + '-' + address )
+							.append( $( '<td></td>' )
+								.text( address ))
+							.append( $( '<td></td>' )
+								.attr( 'class', currency + '-balance' )
+								.text( formatCurrency( currency, balance ))
+							)
+						);
+
+				}
+			}
+			else
+			{
+			if( currency != 'bitcoin' ) console.log( 'F' );
+				$( 'tr#' + currency + '-' + address + ' ' + currency + '-balances .' + currency + '-balance' )
+					.text( formatCurrency( currency, balance ) );
+
+			}
 		}
 
 		// We'll need to update the values, if they exist.
-		updateValues( currency );
+		//updateValues( currency );*/
 	}
 
 	function updateTotalSum() {
