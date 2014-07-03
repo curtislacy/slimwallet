@@ -172,7 +172,7 @@
         </div>
 
         <div class="visible-xs col-xs-12 text-center">
-          <h1>Addresses:</h1>
+          <h3>Addresses:</h3>
           <table class="address-display" width="100%"></table>            
           <hr/>
         </div>
@@ -226,28 +226,29 @@
           </div>
         </div>
 
-        <div class="row">
-
-          <div class="col-sm-12">
-            <div class="panel panel-danger">
-              <div class="panel-heading">
-                <div class="row">
-                  <div class="col-xs-12 text-center">
-                    <table width="100%">
-                      <tr>
-                        <td>
-                          <div id="tip-qr"></div>
-                        </td>
-                        <td>
-                          <p class="announcement-text">Like this?  Help me keep it going! <strong>1Lhx85xtTjDTXHgXPVCBnBeJotG4kU5eK3</strong></p>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="col-sm-12 text-center">
+          <script src="//blockr.io/js_external/coinwidget/coin.js"></script>
+          <script>
+            CoinWidgetCom.go({
+              wallet_address: '1HCUBwkhseAZnbJFm39JxqVyeNN6RNe2bX',
+              currency: 'bitcoin',
+              counter: 'hide',
+              lbl_button: 'Like this?  Help me keep it going!',
+              lbl_count: 'donations',
+              lbl_amount: 'BTC',
+              lbl_address: 'Use address below to donate. Thanks!',
+              qrcode: true,
+              alignment: 'bl',
+              decimals: 8,
+              size: "big",
+              color: "light",
+              countdownFrom: "0",
+              element: "#coinwidget-bitcoin-1HCUBwkhseAZnbJFm39JxqVyeNN6RNe2bX",
+              onShow: function(){},
+              onHide: function(){}
+            });
+          </script>
+          <div id="coinwidget-bitcoin-1HCUBwkhseAZnbJFm39JxqVyeNN6RNe2bX"></div>
         </div>
       </div><!-- /#page-wrapper -->
 
