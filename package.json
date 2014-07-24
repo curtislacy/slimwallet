@@ -20,6 +20,6 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "express": "~3.4.8",
-    "svallet-core": "0.0.14"
+    "svallet-core": "0.0.15"
   }
 }
